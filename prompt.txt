@@ -1,0 +1,611 @@
+
+You are a senior full-stack developer building a professional React + JavaScript 
+web application for Scarlet Interior Design — an Ahmedabad-based interior design firm.
+
+=============================================================
+PROJECT: SCARLET INTERIOR DESIGN — QUOTATION MAKER WEB APP
+=============================================================
+
+TECH STACK:
+- React 18 + Vite
+- JavaScript (no TypeScript)
+- Tailwind CSS (for styling)
+- jsPDF + html2canvas (for PDF generation)
+- localStorage (for saving last 7 quotations)
+- React Router DOM (for routing)
+- Lucide React (for icons — premium quality)
+- No backend required — fully client-side
+
+COLOR PALETTE (STRICT — use only these):
+- Primary Red: #C0392B  (Scarlet brand red)
+- Dark Red: #922B21
+- Black: #1A1A1A
+- Off-White/Background: #FAFAFA
+- White: #FFFFFF
+- Gray accent: #E8E8E8
+
+=============================================================
+UI LAYOUT — CHATGPT-STYLE SIDEBAR DESIGN
+=============================================================
+
+The app must have a sidebar layout exactly like ChatGPT:
+
+LEFT SIDEBAR (fixed, dark black #1A1A1A):
+- Top: Scarlet Interior Design LOGO (placed as <img src="/logo.png" />) 
+  — user will provide logo.png file, just reference it
+- Below logo: "+ New Quotation" button (red background, white text, full width)
+- Below button: "Recent Quotations" label
+- List of last 7 saved quotations (show client name + date + BHK type)
+  — clicking loads that quotation for viewing/editing
+  — each item has a delete icon on hover
+- Bottom of sidebar: 
+  Line 1: "📞 90543 64058" (clickable tel: link)
+  Line 2: Two icon buttons side by side:
+    🌐 Website icon → links to https://scarletinteriordesign.com/
+    📸 Instagram icon → links to https://www.instagram.com/scarletinteriordesigns
+  Line 3 (very bottom, small text): 
+    "© 2026 Scarlet Interior Design | Made with ❤️ by Rushil Chauhan"
+
+MAIN CONTENT AREA (right of sidebar, white background):
+- Shows the current quotation creation flow (multi-step wizard)
+
+=============================================================
+QUOTATION CREATION — MULTI-STEP WIZARD
+=============================================================
+
+STEP 1 — CLIENT DETAILS FORM:
+Fields (all editable):
+- Client Name *
+- Address *
+- Contact Number *
+- GST Number
+- Quotation Date (date picker, defaults to today)
+- Quotation Number (auto-generated: SCR-001, SCR-002, etc.)
+
+Scarlet's details are FIXED (not editable, shown as info):
+  SCARLET INTERIOR DESIGN
+  Beauty in Simplicity
+  915, Satyamev Eminence, Science City Road, Sola, Ahmedabad
+  Contact: 9925179341
+  GST No.: 24CCBPP7499B1ZG
+
+---
+
+STEP 2 — PROJECT TYPE SELECTION:
+Show cards/buttons for user to select:
+
+BHK Options (large clickable cards with icons):
+  [ 2 BHK ]  [ 3 BHK ]  [ 4 BHK ]  [ 5 BHK ]  [ Commercial ]  [ Other (custom text) ]
+
+Quotation Category (shown after BHK selection):
+  [ Turnkey Interior ]  [ Only Designing (3D Visualization) ]
+
+---
+
+STEP 3 — PACKAGE SELECTION:
+Three cards side by side:
+  [ STANDARD ]     [ PREMIUM ]     [ LUXURIOUS ]
+Each card shows a brief description of what's included based on PDF data.
+User selects one.
+
+---
+
+STEP 4 — BUILD QUOTATION:
+Two options shown as large cards:
+  [ 📝 Edit Pre-built Format ]     [ ✏️ Build from Scratch ]
+
+--- OPTION A: EDIT PRE-BUILT FORMAT ---
+
+Load the pre-built template based on BHK + Category + Package selection.
+All templates are hardcoded from the PDFs you analyzed.
+
+TEMPLATE DATA (hardcoded from PDFs):
+
+For each template, pre-populate:
+1. Intro paragraph (editable textarea)
+2. Scope of Work sections with rooms and items
+3. Material Specification table
+4. Notes section  
+5. Payment Schedule
+6. Total Estimated Cost
+
+Each item in scope of work:
+- Has a serial number (auto)
+- Description text (editable inline)
+- A delete button (×) on the right
+- An "+ Add Item" button below each section
+- Section title is editable
+- Entire section can be deleted
+- "+ Add Section" button at bottom of scope
+
+Material Specification Table (3 columns):
+- Material | Specification | Important Clarity
+- Each cell is editable
+- Rows can be added/deleted
+
+Total Estimated Cost:
+- Editable number field (user types the total)
+- Shown prominently at bottom in red box
+- Displayed in Indian number format (e.g., ₹8,21,000/-)
+
+Payment Schedule (editable, line by line):
+- Pre-filled from PDF templates
+- Each line editable
+- Add/remove lines
+
+--- OPTION B: BUILD FROM SCRATCH ---
+
+Step-by-step builder:
+
+1. INTRO TEXT: Editable textarea with placeholder
+   Default: "Thank you for your inquiry. With reference to our recent discussion, 
+   we are pleased to share our interior package quotation..."
+
+2. SCOPE OF WORK BUILDER:
+   - "+ Add Section" button creates a new section (e.g., VESTIBULE)
+   - Each section has:
+     - Editable section title
+     - Items list where each item has: Sr. No (auto) + Description (text input)
+     - "+ Add Item" button
+     - Delete item button
+     - Delete section button
+   - Sections are drag-reorderable (optional, basic is fine)
+
+3. MATERIAL SPECIFICATION TABLE:
+   - 3-column table: Material | Specification | Important Clarity
+   - Rows can be added/deleted
+   - Each cell is editable
+
+4. NOTES SECTION:
+   - Editable bullet-point list
+   - Pre-filled with standard notes from PDFs:
+     • In case of non-negotiable rates except above...
+     • Electric appliances such as fan, chimney, hob...
+     • Decorative light such as hanging, chandelier...
+     • Furniture which is not mentioned above will be charged extra.
+     • If there is no provision of the labor lift...
+     • Above rates are given before design.
+     • Mentioned furniture may vary after face to face discussion with client.
+     • Client shall provide enough water and electric supply at work area at free of cost.
+     • Rates for site development and elevation items shall be charged extra.
+     • Material selection and decision as per interior consultant and client.
+     • All matters are subject to Ahmedabad jurisdiction.
+     • All taxes are excluding from these rates.
+   - Each note is editable, deletable, and new ones can be added
+
+5. PAYMENT SCHEDULE:
+   Two modes based on quotation type:
+
+   For TURNKEY INTERIOR (6-stage):
+   1. At the stage of project confirmation - 10%
+   2. At the stage of POP & Electric work - 20%
+   3. Before commencement of work / At Site Ply delivery time - 30%
+   4. After 30 days of commencement of work / At Laminate selection time - 25%
+   5. After 50 days of commencement of work / After color stage - 10%
+   6. Before handover of project & delivery of all loose items - 5%
+
+   For ONLY DESIGNING (4-stage):
+   1. At the stage of project confirmation - 30%
+   2. After providing 3D render - 50%
+   3. After providing 2d details - 10%
+   4. After providing Mood board and Color Palate - 10%
+
+   All lines are editable. Add/remove lines allowed.
+
+6. TOTAL ESTIMATED COST:
+   - Big number input field
+   - Auto-formats to Indian number system
+   - Shows as: "Total Estimated Cost: ₹XX,XX,000/-  Rs."
+   - Displayed in a prominent red-bordered box
+
+---
+
+STEP 5 — PREVIEW & DOWNLOAD:
+- Show live preview of the quotation (styled exactly like the PDF)
+- "💾 Save Quotation" button — saves to localStorage (max 7, oldest removed)
+- "📥 Download PDF" button — generates professional PDF
+
+=============================================================
+PDF GENERATION — CRITICAL REQUIREMENTS
+=============================================================
+
+The PDF must look EXACTLY like the original PDFs provided. Replicate:
+
+PAGE LAYOUT:
+- A4 size portrait
+- White background
+- Red diagonal design elements in top-right corner (dark red triangle/band)
+- Dark gray/black diagonal design elements in bottom-left corner
+- These are decorative corner elements matching the original PDF style
+
+HEADER (every page):
+- Center top: Scarlet logo image
+- Below logo: "SCARLET INTERIOR DESIGN" (spaced letter tracking, bold)
+- Below: "Beauty in Simplicity" (italic, smaller)
+- Horizontal thin red line separator
+
+PAGE 1 HEADER CONTENT:
+- Title in red/dark: "Quotation For [X] BHK Interior Design" (underlined)
+- Left side: Client Name (bold), Address, Contact, GST No.
+- Right side: DATE: DD/MM/YYYY (bold)
+- Intro paragraph (normal text, indented first line)
+
+SCOPE OF WORK SECTIONS:
+- "• SCOPE OF WORK" as section header (bold, underlined)  
+- Each room: "• VESTIBULE" (bold, underlined, centered)
+- Red header bar: [ DESCRIPTION ] (white text on red background)
+- Items in alternating white rows with serial number | description format
+- Serial numbers in small gray boxes on left
+- Clean table borders
+
+MATERIAL SPECIFICATION TABLE:
+- 3 columns with red header row: Material | Specification | Important Clarity
+- Bold dark header text on red background
+- Clean bordered rows
+
+NOTES SECTION:
+- "Notes:" heading (bold, underlined)
+- Bullet point list
+
+PAYMENT SCHEDULE SECTION:
+- "PAYMENT SCHEDULE:" heading (bold, underlined, red)
+- Numbered list
+
+TOTAL COST BOX:
+- Two-cell horizontal box (like original PDF)
+- Left cell: "Total Estimated Cost" (red background, bold white/dark text)
+- Right cell: "₹XX,XX,000/- Rs." (light background, bold text)
+
+FOOTER (last page):
+- "We look forward to transforming your space with elegance and functionality."
+- "Thank you for considering Scarlet Interior Design."
+- "Best Regards,"
+- Bottom: "SCARLET INTERIOR DESIGN" (left) | "Client Signature" (right, with line)
+- Social links row (Website + Instagram)
+
+Use html2canvas to render a hidden styled div and convert to PDF using jsPDF.
+Or use jsPDF directly with careful positioning for best results.
+
+=============================================================
+HARDCODED TEMPLATE DATA (from PDFs)
+=============================================================
+
+Store all template data in a separate file: /src/data/templates.js
+
+Structure:
+```javascript
+export const templates = {
+  "2BHK-turnkey-standard": {
+    title: "Quotation For 2 BHK Interior Design",
+    introText: "Thank you for your inquiry. With reference to our recent discussion, we are pleased to share our basic interior package quotation including furniture and essential decor work for 2 BHK residence.",
+    sections: [
+      {
+        name: "VESTIBULE",
+        items: [
+          "Shoe rack in laminate finish : 3'-0\" x 2'-6\"",
+          "Door grill in laminate finish & CNC grill design",
+          "Wall Color",
+          "Light Fittings [Panel Light and Rope Light]"
+        ]
+      },
+      {
+        name: "DRAWING ROOM",
+        items: [
+          "Designer Sofa - 5 Seaters [L Shape or 3 + 2]",
+          "Centre Table [Quantity - 1]",
+          "Designer T.V. unit in laminate finish with 4'-0\" x lintel height",
+          "False ceiling in gypsum board with color finish",
+          "Decorative main wall with punning, texture or wall paper",
+          "Arabian Curtains with standard hardware",
+          "Wall Colour",
+          "Light Fittings [Panel Light and Rope Light]"
+        ]
+      },
+      {
+        name: "KITCHEN & DINING",
+        items: [
+          "Under platform storage in laminate finish",
+          "5 tandem baskets [Basic]",
+          "Over-head storage: Lintel height with shutter in laminate finish",
+          "False ceiling in gypsum board with colour finish",
+          "Wall color",
+          "Light fittings [Panel light and Rope light]"
+        ]
+      },
+      {
+        name: "MASTER BEDROOM",
+        items: [
+          "Bed in laminate finish with hydraulic storage : 5'-6\"x6'-6\"",
+          "Decorative head board in tapestry finish : 5'-6\"x3'-6\"",
+          "Punning, or texture on main wall",
+          "Side table in laminate finish [Quantity - 1]",
+          "Dressing mirror",
+          "Wardrobe sliding or openable in laminate finish with 6'-0\" length & inner shelves partition and 2 drawers with full height loft",
+          "Roman Curtains with standard hardware",
+          "False ceiling in gypsum board with colour finish",
+          "Wall colour",
+          "Light fittings [Panel light and Rope light]"
+        ]
+      },
+      {
+        name: "BEDROOM - 1",
+        items: [
+          "Bed in laminate finish with hydraulic storage : 5'-0\"x6'-6\"",
+          "Decorative head board in tapestry finish : 5'-0\"x2'-6\"",
+          "Side table in laminate finish [Quantity - 1]",
+          "Wardrobe sliding or openable in laminate finish with 6'-0\" length & inner shelves partition and 2 drawers with full height loft",
+          "Dressing mirror",
+          "False ceiling in gypsum board with colour finish",
+          "Roman Curtains with standard hardware",
+          "Wall color",
+          "Light fittings [Panel light and Rope light]"
+        ]
+      }
+    ],
+    materialSpec: [
+      { material: "False ceiling", specification: "Khushbu company's gypsum Sheet, Size - 12.5mm with 8 kg capacity", clarity: "" },
+      { material: "Fabric for Curtain & Lining Work", specification: "Sarrom / GM / F&F / Divine / Ddecor Etc Depending on Selection", clarity: "Fabric price : which is considered in this is approximately 400/- Rs. Per Meter" },
+      { material: "Light fitting", specification: "G Jaks or Similar", clarity: "Panel Lights & Rope Lights which provide minimum 02 Years of product warranty." },
+      { material: "Inner Laminate", specification: "0.8 MM Fabric or Wooden Finish", clarity: "Durian or Similar 400/- Rs. Per Sheet" },
+      { material: "Outer Laminate", specification: "Levin/ Sunmica / Durian / Airolam / Armany and many other brands depend on Selection", clarity: "Average price is 1200/- Rs. Per Sheet for entire house." },
+      { material: "Kitchen Tandem Channel", specification: "Vita or similar", clarity: "Average price: Rs.1400/- to Rs. 1600/- Per tandem channel" },
+      { material: "Ply Wood", specification: "Alternate Ply IS303 MR Grade plywood", clarity: "Approximately Rs. 62/- to Rs. 65/- Per Square ft." },
+      { material: "Electric Wire", specification: "Orbit or Johnsen Cables or similar", clarity: "" },
+      { material: "Hardware Regular (Telescopic Channel / Auto Hinges / Mijagra / Gas Pumps / Bed Hydraulic / Wardrobe Sliding etc)", specification: "Vita Or Similar brand", clarity: "All hardware and materials are standard level of specified brand, any upgrade or preference in particular mechanism or system will be billed additionally. Drawer Channel - Telescopic Channel are not-Soft close. Hinges for shutters are Soft Close. Wardrobe Sliding Channels are Soft Close" },
+      { material: "Decorative Door Handles & Locks of door grill", specification: "Europa or Similar", clarity: "Rs. 1200/- to Rs. 1500/- Per Piece" },
+      { material: "White Glue (Fevicol)", specification: "Blue Coat Marine, Euro or Similar", clarity: "" },
+      { material: "Color", specification: "Asian Royal Paint or Similar", clarity: "" },
+      { material: "Sofa", specification: "5 Seaters", clarity: "Rs. 40,000/- Sofa Set" },
+      { material: "Centre table", specification: "Imported", clarity: "Rs. 8,000/- Maximum" },
+      { material: "Total light fixtures", specification: "20 Pieces", clarity: "More than 20 fixtures will be charged extra." }
+    ],
+    paymentSchedule: "turnkey-6stage",
+    estimatedCost: "8,21,000"
+  },
+
+  "2BHK-turnkey-premium": {
+    // Same structure, 180 sq yd version
+    // items include Corner Table, acrylic finish kitchen, etc.
+    // estimatedCost: "9,21,000"
+    // ... fill from second PDF
+  },
+
+  "3BHK-turnkey-standard": {
+    // Basic 3 BHK 180-210 sq yd
+    // estimatedCost: "12,99,000"
+  },
+
+  "3BHK-turnkey-premium": {
+    // Medium 3 BHK 230 sq yd
+    // estimatedCost: "15,99,000"
+  },
+
+  "3BHK-turnkey-luxurious": {
+    // Premium 3 BHK 230 sq yd - PU/Veneer finish
+    // estimatedCost: "17,51,000"
+  },
+
+  "4BHK-turnkey-standard": {
+    // Standard 4 BHK 321-380 sq yd
+    // estimatedCost: "23,99,000"
+  },
+
+  "4BHK-turnkey-premium": {
+    // Premium 4 BHK 321-380 sq yd
+    // estimatedCost: "27,99,000"
+  },
+
+  "2BHK-designing-standard": {
+    title: "Quotation For Interior Designing",
+    introText: "Thank you for your inquiry. With reference to our recent discussion, we are pleased to share our basic quote for 3D Rendering and visualization.",
+    sections: [
+      {
+        name: "Scope of Work",
+        items: [
+          "Presentable 2D furniture lay-out",
+          "Electric details with loop drawing, switchboard details, light details and electric schedule.",
+          "False ceiling details with section detail and 3D modelling",
+          "Interior concept and theme presented in 3d modelling",
+          "Render 3d images after finalizing 3d modelling [2 BHK - 8 views]",
+          "2D presentable details with furniture working drawings",
+          "Color Palate and Mood board",
+          "Material selection with client",
+          "Site Visit [10 Visits]"
+        ]
+      }
+    ],
+    notes: [
+      "[1] Site Visit Policy (within 30 KM of Ahmedabad): Up to 10 site visits are included for locations within a 30-kilometer radius from Ahmedabad. Any additional visit beyond 10 will be chargeable at ₹4,000/- per visit.",
+      "[2] Site Visit Policy (beyond 30 KM from Ahmedabad): For locations situated more than 30 kilometers away from Ahmedabad, a total of 3 site visits will be included. 1st Visit: At the raw site stage for measurements. 2nd Visit: At the raw furniture structure stage. 3rd Visit: At the final finishing stage. Any additional visit beyond the 3 included visits will be chargeable at ₹8,000/- per visit.",
+      "[3] Quotation Customization: This is a standard quotation for your home. However, we are happy to customize the design and budget as per your specific requirements."
+    ],
+    paymentSchedule: "designing-4stage",
+    estimatedCost: "80,000"
+  },
+
+  "3BHK-designing-standard": {
+    // estimatedCost: "1,20,000"
+    // 3 BHK - 12 views
+  },
+
+  "4BHK-designing-standard": {
+    // estimatedCost: "1,50,000"
+    // 4 BHK - 15 views
+  }
+};
+
+export const paymentSchedules = {
+  "turnkey-6stage": [
+    { stage: "At the stage of project confirmation", percentage: "10%" },
+    { stage: "At the stage of POP & Electric work", percentage: "20%" },
+    { stage: "Before commencement of work / At Site Ply delivery time", percentage: "30%" },
+    { stage: "After 30 days of commencement of work / At Laminate selection time", percentage: "25%" },
+    { stage: "After 50 days of commencement of work / After color stage", percentage: "10%" },
+    { stage: "Before handover of project & delivery of all loose items", percentage: "5%" }
+  ],
+  "designing-4stage": [
+    { stage: "At the stage of project confirmation", percentage: "30%" },
+    { stage: "After providing 3D render", percentage: "50%" },
+    { stage: "After providing 2d details", percentage: "10%" },
+    { stage: "After providing Mood board and Color Palate", percentage: "10%" }
+  ]
+};
+
+export const defaultNotes = [
+  "In case of non-negotiable rates except above, that rate should be decided as per given with material item rate or decided on site",
+  "Electric appliances such as fan, chimney, hob, geyser, AC, TV, refrigerator, microwave, oven etc. is not included",
+  "Decorative light such as hanging, chandelier, picture light magnetic light is not included",
+  "Furniture which is not mentioned above will be charged extra.",
+  "If there is no provision of the labor lift whatever the labor charge for placing material after 3rd floor will be charge floor wise.",
+  "Above rates are given before design.",
+  "Mentioned furniture may vary after face to face discussion with client.",
+  "Client shall provide enough water and electric supply at work area at free of cost.",
+  "Rates for site development and elevation items shall be charged extra.",
+  "Material selection and decision as per interior consultant and client.",
+  "All matters are subject to Ahmedabad jurisdiction.",
+  "All taxes are excluding from these rates."
+];
+```
+
+=============================================================
+QUOTATION HISTORY — localStorage
+=============================================================
+
+- Save up to 7 most recent quotations
+- Key: "scarlet_quotations"
+- Each entry: { id, clientName, bhkType, package, date, quotationType, data }
+- On save: push to array, if length > 7, remove oldest
+- Sidebar shows: Client Name + BHK + Date
+- Click to load: populates the full editor with saved data
+- Delete button (trash icon) removes from history
+
+=============================================================
+FILE STRUCTURE
+=============================================================
+
+scarlet-quotation-app/
+├── public/
+│   └── logo.png              (user will place logo here)
+├── src/
+│   ├── components/
+│   │   ├── Sidebar.jsx
+│   │   ├── StepWizard.jsx
+│   │   ├── steps/
+│   │   │   ├── Step1ClientDetails.jsx
+│   │   │   ├── Step2ProjectType.jsx
+│   │   │   ├── Step3Package.jsx
+│   │   │   ├── Step4BuildQuotation.jsx
+│   │   │   └── Step5PreviewDownload.jsx
+│   │   ├── builder/
+│   │   │   ├── ScopeBuilder.jsx
+│   │   │   ├── MaterialTable.jsx
+│   │   │   ├── NotesEditor.jsx
+│   │   │   ├── PaymentSchedule.jsx
+│   │   │   └── CostSummary.jsx
+│   │   ├── pdf/
+│   │   │   └── QuotationPDF.jsx  (hidden render div for PDF)
+│   │   └── ui/
+│   │       ├── Button.jsx
+│   │       ├── Card.jsx
+│   │       └── Input.jsx
+│   ├── data/
+│   │   └── templates.js
+│   ├── hooks/
+│   │   ├── useQuotation.js
+│   │   └── useHistory.js
+│   ├── utils/
+│   │   ├── pdfGenerator.js
+│   │   └── formatCurrency.js
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+├── package.json
+├── vite.config.js
+└── tailwind.config.js
+
+=============================================================
+PACKAGE.JSON DEPENDENCIES
+=============================================================
+
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "jspdf": "^2.5.1",
+    "html2canvas": "^1.4.1",
+    "lucide-react": "^0.400.0",
+    "tailwindcss": "^3.4.0",
+    "@tailwindcss/forms": "^0.5.7"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  }
+}
+
+=============================================================
+ADDITIONAL IMPLEMENTATION NOTES
+=============================================================
+
+1. QUOTATION NUMBER AUTO-GENERATION:
+   Format: SCR-[YEAR]-[3-DIGIT-NUMBER]
+   Example: SCR-2025-001
+   Store counter in localStorage: "scarlet_quote_counter"
+
+2. CURRENCY FORMATTING:
+   Always show in Indian format: ₹XX,XX,XXX/-
+   Function: formatIndianCurrency(number) 
+   Returns: "₹8,21,000/-"
+
+3. RESPONSIVE: 
+   - Sidebar collapses on mobile (hamburger menu)
+   - Main content scrolls properly
+
+4. LOADING STATES:
+   - PDF generation shows "Generating PDF..." overlay
+
+5. TOAST NOTIFICATIONS:
+   - "Quotation saved!" on save
+   - "PDF Downloaded!" on download
+
+6. BHK TYPE OPTIONS WITH ICONS:
+   2BHK 🏠 | 3BHK 🏡 | 4BHK 🏘️ | 5BHK 🏰 | Commercial 🏢 | Other ✏️
+
+7. PRINT/PDF STYLING:
+   The PDF div must have exact pixel-perfect styling.
+   Use exact red color #C0392B for all red elements.
+   Corner decorative elements: use CSS clip-path or SVG triangles.
+
+8. VERCEL DEPLOYMENT:
+   - Add vercel.json with SPA redirect rules:
+   {
+     "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+   }
+   - Build command: npm run build
+   - Output directory: dist
+
+=============================================================
+START BUILDING — DO THIS IN ORDER:
+=============================================================
+
+1. Run: npm create vite@latest scarlet-quotation-app -- --template react
+2. Install all dependencies
+3. Set up Tailwind CSS
+4. Create file structure
+5. Build Sidebar component first
+6. Build StepWizard with all 5 steps
+7. Populate templates.js with ALL data from PDFs
+8. Build the PDF generator last (most complex)
+9. Test all flows
+10. Add vercel.json for deployment
+
+BUILD THIS NOW. Make it professional, pixel-perfect, and production-ready.
+Every single feature described above must be implemented completely.
+No placeholder components. Full working code.
+```
+
+---
+
