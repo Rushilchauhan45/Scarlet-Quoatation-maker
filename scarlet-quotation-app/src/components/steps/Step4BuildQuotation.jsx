@@ -16,7 +16,7 @@ export default function Step4BuildQuotation({ quotation, update, applyTemplateSe
     if (quotation.buildMode === 'template') {
       applyTemplateSelection()
     }
-  }, [quotation.bhkType, quotation.packageType, quotation.quotationType])
+  }, [applyTemplateSelection, quotation.buildMode, quotation.bhkType, quotation.packageType, quotation.quotationType])
 
   return (
     <div className="space-y-6">
