@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { defaultNotes, getTemplateKey, paymentSchedules, templates } from '../data/templates'
 
 const todayISO = new Date().toISOString().split('T')[0]
@@ -59,22 +59,28 @@ export const useQuotation = (quotationNumberFactory) => {
     setStep(1)
   }
 
-  const applyTemplateSelection = () => {
-    const key = getTemplateKey(quotation)
-    const tpl = templates[key]
-    if (!tpl) return false
+  const applyTemplateSelection = useCallback(() => {
+    let applied = false
 
-    setQuotation((prev) => ({
-      ...prev,
-      introText: tpl.introText,
-      sections: toEditableSections(tpl.sections),
-      materialSpec: toEditableRows(tpl.materialSpec),
-      notes: [...(tpl.notes?.length ? tpl.notes : defaultNotes)],
-      paymentSchedule: paymentSchedules[tpl.paymentSchedule].map((x) => ({ ...x, id: crypto.randomUUID() })),
-      estimatedCost: tpl.estimatedCost,
-    }))
-    return true
-  }
+    setQuotation((prev) => {
+      const key = getTemplateKey(prev)
+      const tpl = templates[key]
+      if (!tpl) return prev
+
+      applied = true
+      return {
+        ...prev,
+        introText: tpl.introText,
+        sections: toEditableSections(tpl.sections),
+        materialSpec: toEditableRows(tpl.materialSpec),
+        notes: [...(tpl.notes?.length ? tpl.notes : defaultNotes)],
+        paymentSchedule: paymentSchedules[tpl.paymentSchedule].map((x) => ({ ...x, id: crypto.randomUUID() })),
+        estimatedCost: tpl.estimatedCost,
+      }
+    })
+
+    return applied
+  }, [])
 
   const loadFromHistory = (entryData) => {
     setQuotation(entryData)
