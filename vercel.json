@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd scarlet-quotation-app && npm install",
+  "buildCommand": "cd scarlet-quotation-app && npm run build",
+  "outputDirectory": "scarlet-quotation-app/dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
