@@ -35,7 +35,7 @@ const chunk = (arr = [], n) => {
 }
 
 // ─── Height estimators (conservative) ────────────────────────────────────────
-const ROW_H       = 30
+const ROW_H       = 38
 const HEADER_ROW  = 32
 const TITLE_H     = 38
 const DESC_BAR    = 32
@@ -67,7 +67,10 @@ const buildBlocks = (q) => {
   }
 
   ;(q.sections || []).forEach((sec) => {
-    chunk(sec.items || [], 12).forEach((items, idx) => {
+    const visibleItems = (sec.items || []).filter((item) => !item?.hideInPdf)
+    if (!visibleItems.length) return
+
+    chunk(visibleItems, 12).forEach((items, idx) => {
       blocks.push({ type: 'scope', key: `scope-${sec.id}-${idx}`, title: sec.name, items, continued: idx > 0 })
     })
   })
@@ -241,14 +244,30 @@ const RenderScope = ({ block }) => (
         DESCRIPTION
       </div>
       {block.items.map((item, i) => (
+        item.isSubTitle ? (
+          <div
+            key={item.id}
+            style={{
+              borderTop: `1px solid ${R.gray}`,
+              padding: '6px 10px',
+              backgroundColor: '#D8D8D8',
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              color: R.black,
+            }}
+          >
+            {item.text}
+          </div>
+        ) : (
         <div key={item.id} style={{
           display: 'grid',
           gridTemplateColumns: '32px 1fr',
-          alignItems: 'center',
+          alignItems: 'start',
           borderTop: `1px solid ${R.gray}`,
-          padding: '5px 10px',
+          padding: '6px 10px',
           fontSize: 11,
-          minHeight: 28,
+          minHeight: 38,
           backgroundColor: i % 2 ? R.offWhite : '#fff',
         }}>
           <span style={{
@@ -256,9 +275,19 @@ const RenderScope = ({ block }) => (
             alignItems: 'center', justifyContent: 'center',
             borderRadius: 3, fontSize: 10, backgroundColor: R.gray,
             flexShrink: 0, fontWeight: 600,
-          }}>{i + 1}</span>
-          <span style={{ lineHeight: '18px', color: R.black }}>{item.text}</span>
+          }}>
+            {block.items.slice(0, i + 1).filter((x) => !x.isSubTitle).length}
+          </span>
+          <div>
+            <div style={{ lineHeight: '18px', color: R.black }}>{item.text}</div>
+            {item.paramValue ? (
+              <div style={{ fontSize: 10, color: '#666', lineHeight: '16px' }}>
+                Parameter: {item.paramValue} {item.paramLabel || ''}
+              </div>
+            ) : null}
+          </div>
         </div>
+        )
       ))}
     </div>
   </div>

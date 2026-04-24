@@ -1,3 +1,5 @@
+import { threeBhkTurnkeyTemplates } from './threeBhkTurnkeyTemplates'
+
 export const paymentSchedules = {
   'turnkey-6stage': [
     { stage: 'At the stage of project confirmation', percentage: '10%' },
@@ -142,24 +144,24 @@ export const templates = {
   }),
   '3BHK-turnkey-standard': makeTemplate({
     title: 'Quotation For 3 BHK Interior Design',
-    introText: 'Basic 3 BHK turnkey interior quotation for practical and elegant execution.',
-    sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 2', items: ['Bed with storage', 'Wardrobe', 'False ceiling', 'Light fittings'] }],
+    introText: threeBhkTurnkeyTemplates.STANDARD.introText,
+    sections: threeBhkTurnkeyTemplates.STANDARD.sections,
     paymentSchedule: 'turnkey-6stage',
-    estimatedCost: '12,99,000',
+    estimatedCost: threeBhkTurnkeyTemplates.STANDARD.estimatedCost,
   }),
   '3BHK-turnkey-premium': makeTemplate({
     title: 'Quotation For 3 BHK Interior Design',
-    introText: 'Premium 3 BHK turnkey package with higher-grade finish materials.',
-    sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 2', items: ['Bed with storage', 'Wardrobe with loft', 'Designer wall finish', 'Light fittings'] }],
+    introText: threeBhkTurnkeyTemplates.PREMIUM.introText,
+    sections: threeBhkTurnkeyTemplates.PREMIUM.sections,
     paymentSchedule: 'turnkey-6stage',
-    estimatedCost: '15,99,000',
+    estimatedCost: threeBhkTurnkeyTemplates.PREMIUM.estimatedCost,
   }),
   '3BHK-turnkey-luxurious': makeTemplate({
     title: 'Quotation For 3 BHK Interior Design',
-    introText: 'Luxurious 3 BHK package using premium finish standards including PU/Veneer-oriented elements.',
-    sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 2', items: ['Premium bed with storage', 'Premium wardrobe', 'Designer details', 'Premium light fittings'] }],
+    introText: threeBhkTurnkeyTemplates.LUXURIOUS.introText,
+    sections: threeBhkTurnkeyTemplates.LUXURIOUS.sections,
     paymentSchedule: 'turnkey-6stage',
-    estimatedCost: '17,51,000',
+    estimatedCost: threeBhkTurnkeyTemplates.LUXURIOUS.estimatedCost,
   }),
   '4BHK-turnkey-standard': makeTemplate({
     title: 'Quotation For 4 BHK Interior Design',
@@ -174,6 +176,13 @@ export const templates = {
     sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 3', items: ['Premium bed', 'Premium wardrobe', 'False ceiling', 'Light fittings'] }],
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: '27,99,000',
+  }),
+  '4BHK-turnkey-luxurious': makeTemplate({
+    title: 'Quotation For 4 BHK Interior Design',
+    introText: 'Luxurious turnkey interior package for 4 BHK with high-end detailing and finishes.',
+    sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 3', items: ['Luxury bed', 'Luxury wardrobe', 'Designer wall treatment', 'Premium light fittings'] }],
+    paymentSchedule: 'turnkey-6stage',
+    estimatedCost: '31,99,000',
   }),
   '2BHK-designing-standard': {
     title: 'Quotation For Interior Designing',
@@ -211,6 +220,20 @@ export const templates = {
     paymentSchedule: 'designing-4stage',
     estimatedCost: '1,20,000',
   }),
+  '3BHK-designing-premium': makeTemplate({
+    title: 'Quotation For Interior Designing',
+    introText: '3 BHK premium designing quotation with detailed visualization and broader drawing coverage.',
+    sections: [{ name: 'Scope of Work', items: ['3D renders [16 views]', '2D working drawings with sections', 'Mood board + material guidance', 'Site visits'] }],
+    paymentSchedule: 'designing-4stage',
+    estimatedCost: '1,45,000',
+  }),
+  '3BHK-designing-luxurious': makeTemplate({
+    title: 'Quotation For Interior Designing',
+    introText: '3 BHK luxurious designing quotation with advanced 3D detailing and complete concept support.',
+    sections: [{ name: 'Scope of Work', items: ['3D renders [20 views]', '2D working drawings with advanced detailing', 'Mood board + curated finishes', 'Site visits'] }],
+    paymentSchedule: 'designing-4stage',
+    estimatedCost: '1,75,000',
+  }),
   '4BHK-designing-standard': makeTemplate({
     title: 'Quotation For Interior Designing',
     introText: '4 BHK designing quotation for complete planning and visualization services.',
@@ -218,11 +241,25 @@ export const templates = {
     paymentSchedule: 'designing-4stage',
     estimatedCost: '1,50,000',
   }),
+  '4BHK-designing-premium': makeTemplate({
+    title: 'Quotation For Interior Designing',
+    introText: '4 BHK premium designing quotation with richer concept coverage and additional drawing support.',
+    sections: [{ name: 'Scope of Work', items: ['3D renders [20 views]', '2D working drawings with sections', 'Material coordination', 'Site visits'] }],
+    paymentSchedule: 'designing-4stage',
+    estimatedCost: '1,80,000',
+  }),
+  '4BHK-designing-luxurious': makeTemplate({
+    title: 'Quotation For Interior Designing',
+    introText: '4 BHK luxurious designing quotation with complete visual detailing and premium concept development.',
+    sections: [{ name: 'Scope of Work', items: ['3D renders [24 views]', '2D detailed working drawings', 'Material coordination + premium palette', 'Site visits'] }],
+    paymentSchedule: 'designing-4stage',
+    estimatedCost: '2,20,000',
+  }),
 }
 
 export const getTemplateKey = ({ bhkType, quotationType, packageType }) => {
   const safeBhk = bhkType || '2BHK'
   const safeType = quotationType === 'Only Designing (3D Visualization)' ? 'designing' : 'turnkey'
-  const safePackage = safeType === 'designing' ? 'standard' : (packageType || 'STANDARD').toLowerCase()
+  const safePackage = (packageType || 'STANDARD').toLowerCase()
   return `${safeBhk}-${safeType}-${safePackage}`
 }

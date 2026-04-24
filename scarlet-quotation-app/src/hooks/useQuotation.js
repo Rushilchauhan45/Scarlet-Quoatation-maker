@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { defaultNotes, getTemplateKey, paymentSchedules, templates } from '../data/templates'
+import { normalizePackageForFlow } from '../data/quotationFlow'
+import { computeItemAutoAmount, parseNumericInput } from '../utils/quotationMath'
 
 const todayISO = new Date().toISOString().split('T')[0]
 
@@ -7,10 +9,43 @@ const toEditableSections = (sections = []) =>
   sections.map((section, sIndex) => ({
     id: crypto.randomUUID(),
     name: section.name || `SECTION ${sIndex + 1}`,
-    items: (section.items || []).map((item) => ({
-      id: crypto.randomUUID(),
-      text: item,
-    })),
+    items: (section.items || []).map((item) => {
+      if (typeof item === 'string') {
+        return {
+          id: crypto.randomUUID(),
+          text: item,
+          paramLabel: 'quantity',
+          paramValue: '',
+          amount: '',
+          pricing: null,
+          usesGlobalSqft: false,
+          hideInPdf: false,
+          isSubTitle: false,
+          manualAmount: true,
+        }
+      }
+
+      const normalized = {
+        id: crypto.randomUUID(),
+        text: item?.text || item?.name || '',
+        paramLabel: item?.paramLabel || 'quantity',
+        paramValue: item?.paramValue ?? '',
+        amount: item?.amount ?? '',
+        pricing: item?.pricing || null,
+        usesGlobalSqft: Boolean(item?.usesGlobalSqft),
+        hideInPdf: Boolean(item?.hideInPdf),
+        isSubTitle: Boolean(item?.isSubTitle),
+        manualAmount: typeof item?.manualAmount === 'boolean' ? item.manualAmount : false,
+      }
+
+      const hasPricing = Number.isFinite(parseNumericInput(normalized?.pricing?.rate))
+      if (hasPricing && !normalized.manualAmount) {
+        const autoAmount = computeItemAutoAmount(normalized)
+        if (autoAmount !== null) normalized.amount = String(autoAmount)
+      }
+
+      return normalized
+    }),
   }))
 
 const toEditableRows = (rows = []) =>
@@ -39,6 +74,7 @@ const defaultState = {
   materialSpec: [],
   notes: [...defaultNotes],
   paymentSchedule: paymentSchedules['turnkey-6stage'].map((x) => ({ ...x, id: crypto.randomUUID() })),
+  marginAmount: '0',
   estimatedCost: '',
 }
 
@@ -49,7 +85,17 @@ export const useQuotation = (quotationNumberFactory) => {
     quotationNumber: quotationNumberFactory(),
   }))
 
-  const update = (patch) => setQuotation((prev) => ({ ...prev, ...patch }))
+  const update = (patch) =>
+    setQuotation((prev) => {
+      const next = { ...prev, ...patch }
+      if (
+        Object.prototype.hasOwnProperty.call(patch, 'bhkType') ||
+        Object.prototype.hasOwnProperty.call(patch, 'packageType')
+      ) {
+        next.packageType = normalizePackageForFlow(next.bhkType, next.packageType)
+      }
+      return next
+    })
 
   const resetQuotation = () => {
     setQuotation({
@@ -64,14 +110,16 @@ export const useQuotation = (quotationNumberFactory) => {
 
     setQuotation((prev) => {
       const key = getTemplateKey(prev)
-      const tpl = templates[key]
+      const fallbackKey = getTemplateKey({ ...prev, packageType: 'STANDARD' })
+      const tpl = templates[key] || templates[fallbackKey]
       if (!tpl) return prev
 
       applied = true
+      const editableSections = toEditableSections(tpl.sections)
       return {
         ...prev,
         introText: tpl.introText,
-        sections: toEditableSections(tpl.sections),
+        sections: editableSections,
         materialSpec: toEditableRows(tpl.materialSpec),
         notes: [...(tpl.notes?.length ? tpl.notes : defaultNotes)],
         paymentSchedule: paymentSchedules[tpl.paymentSchedule].map((x) => ({ ...x, id: crypto.randomUUID() })),
@@ -83,7 +131,14 @@ export const useQuotation = (quotationNumberFactory) => {
   }, [])
 
   const loadFromHistory = (entryData) => {
-    setQuotation(entryData)
+    const safeSections = toEditableSections(entryData.sections || [])
+
+    setQuotation({
+      ...entryData,
+      packageType: normalizePackageForFlow(entryData.bhkType, entryData.packageType),
+      sections: safeSections,
+      marginAmount: entryData.marginAmount ?? entryData.marginPercent ?? '0',
+    })
     setStep(5)
   }
 
@@ -95,7 +150,7 @@ export const useQuotation = (quotationNumberFactory) => {
       return Boolean(quotation.bhkType && quotation.quotationType)
     }
     if (step === 3) {
-      return Boolean(quotation.packageType || quotation.quotationType === 'Only Designing (3D Visualization)')
+      return Boolean(quotation.packageType)
     }
     if (step === 4) {
       return Boolean(quotation.buildMode)

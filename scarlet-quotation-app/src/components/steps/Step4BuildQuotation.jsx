@@ -60,7 +60,13 @@ export default function Step4BuildQuotation({ quotation, update, applyTemplateSe
             <PaymentSchedule rows={quotation.paymentSchedule} onChange={(paymentSchedule) => update({ paymentSchedule })} />
           </div>
 
-          <CostSummary value={quotation.estimatedCost} onChange={(estimatedCost) => update({ estimatedCost })} />
+          <CostSummary
+            sections={quotation.sections}
+            marginAmount={quotation.marginAmount}
+            onMarginAmountChange={(marginAmount) => update({ marginAmount })}
+            value={quotation.estimatedCost}
+            onChange={(estimatedCost) => update({ estimatedCost })}
+          />
         </div>
       ) : null}
     </div>

@@ -1,9 +1,10 @@
+import { parseNumericInput, roundToRupee } from './quotationMath'
+
 export const formatIndianCurrency = (value) => {
   if (value === null || value === undefined) return '₹0/-'
-  const numeric = String(value).replace(/[^\d]/g, '')
-  if (!numeric) return '₹0/-'
-  const number = Number(numeric)
-  return `₹${number.toLocaleString('en-IN')}/-`
+  const numeric = parseNumericInput(value)
+  if (!Number.isFinite(numeric)) return '₹0/-'
+  return `₹${roundToRupee(numeric).toLocaleString('en-IN')}/-`
 }
 
 export const formatDateDDMMYYYY = (dateString) => {
