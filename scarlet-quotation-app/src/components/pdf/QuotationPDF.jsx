@@ -1,4 +1,5 @@
 import { Globe, Instagram } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { formatDateDDMMYYYY, formatIndianCurrency } from '../../utils/formatCurrency'
 
 // ─── Brand Colors ─────────────────────────────────────────────────────────────
@@ -18,14 +19,15 @@ const PAD_TOP  = 44
 const PAD_BOT  = 32
 
 // Estimated heights of fixed chrome (px)
-const HEADER_H   = 108   // logo + name + tagline + red bar
-const CLIENT_H   = 82    // client meta grid
-const FOOTER_H   = 128   // "best regards" + social links
+const HEADER_H   = 108
+const CLIENT_H   = 90
+const FOOTER_H   = 128
 const PAGENO_H   = 22
 
 const CONTENT_FIRST = PAGE_H - PAD_TOP - PAD_BOT - HEADER_H - CLIENT_H - PAGENO_H
 const CONTENT_MID   = PAGE_H - PAD_TOP - PAD_BOT - PAGENO_H
-const CONTENT_LAST  = PAGE_H - PAD_TOP - PAD_BOT - FOOTER_H - PAGENO_H
+// Reserve extra 20px buffer so footer never gets pushed to bottom
+const CONTENT_LAST  = PAGE_H - PAD_TOP - PAD_BOT - FOOTER_H - PAGENO_H - 20
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const chunk = (arr = [], n) => {
@@ -34,16 +36,53 @@ const chunk = (arr = [], n) => {
   return out
 }
 
+// Smart chunk: subtitles always stay with the item(s) that follow them
+const smartChunk = (items = [], maxRows) => {
+  const pages = []
+  let current = []
+  let count = 0  // only count non-subtitle rows against the limit
+
+  items.forEach((item, i) => {
+    const isSubTitle = item.isSubTitle
+
+    if (!isSubTitle && count >= maxRows) {
+      // Before flushing, if the last item in current is a subtitle, move it to next page
+      // so subtitle is never orphaned at end of a chunk
+      if (current.length > 0 && current[current.length - 1].isSubTitle) {
+        const orphanedSubtitle = current.pop()
+        pages.push(current)
+        current = [orphanedSubtitle, item]
+      } else {
+        pages.push(current)
+        current = [item]
+      }
+      count = 1
+    } else {
+      current.push(item)
+      if (!isSubTitle) count++
+    }
+  })
+
+  if (current.length) pages.push(current)
+  return pages
+}
+
 // ─── Height estimators (conservative) ────────────────────────────────────────
-const ROW_H       = 38
+const ROW_H       = 42    // slightly taller to avoid cutting
 const HEADER_ROW  = 32
 const TITLE_H     = 38
 const DESC_BAR    = 32
 
+const SUBTITLE_H  = 34    // height of a subtitle/category row
+
 const blockH = (b) => {
   switch (b.type) {
     case 'intro':    return TITLE_H + 16 + Math.ceil((b.introText?.length || 0) / 88) * 21 + 16
-    case 'scope':    return TITLE_H + DESC_BAR + b.items.length * ROW_H + 16
+    case 'scope': {
+      const regularRows = b.items.filter(x => !x.isSubTitle).length
+      const subTitleRows = b.items.filter(x => x.isSubTitle).length
+      return TITLE_H + DESC_BAR + regularRows * ROW_H + subTitleRows * SUBTITLE_H + 24
+    }
     case 'material': return TITLE_H + HEADER_ROW + b.rows.length * (ROW_H + 8) + 16
     case 'notes':    return TITLE_H + b.notes.length * 23 + 16
     case 'payment':  return TITLE_H + b.rows.length * 23 + 16
@@ -70,7 +109,8 @@ const buildBlocks = (q) => {
     const visibleItems = (sec.items || []).filter((item) => !item?.hideInPdf)
     if (!visibleItems.length) return
 
-    chunk(visibleItems, 12).forEach((items, idx) => {
+    // Smart chunks — subtitles always stay with following items, max 10 rows per block
+    smartChunk(visibleItems, 10).forEach((items, idx) => {
       blocks.push({ type: 'scope', key: `scope-${sec.id}-${idx}`, title: sec.name, items, continued: idx > 0 })
     })
   })
@@ -120,19 +160,55 @@ const paginate = (blocks) => {
 
   if (page.length) pages.push(page)
 
-  // Check last page: if footer + content > page, move last block to new page
-  const checkLast = () => {
+  // Last page check: if footer + all content > CONTENT_LAST, 
+  // keep moving blocks to a new second-to-last page until it fits
+  const ensureFooterFits = () => {
     if (pages.length === 0) return
-    const lastPage = pages[pages.length - 1]
-    const usedInLast = lastPage.reduce((s, b) => s + blockH(b), 0)
-    if (usedInLast > CONTENT_LAST && lastPage.length > 1) {
-      const moved = lastPage.pop()
-      pages.push([moved])
+    let attempts = 0
+    while (attempts < 20) {
+      attempts++
+      const lastPage = pages[pages.length - 1]
+      const usedInLast = lastPage.reduce((s, b) => s + blockH(b), 0)
+      if (usedInLast <= CONTENT_LAST || lastPage.length <= 1) break
+      // Move second-to-last block (not the total block) to previous page
+      const moved = lastPage.splice(lastPage.length - 2, 1)[0]
+      const prevPage = pages[pages.length - 2]
+      if (prevPage) {
+        prevPage.push(moved)
+      } else {
+        pages.splice(pages.length - 1, 0, [moved])
+      }
     }
   }
-  checkLast()
+  ensureFooterFits()
 
   return pages
+}
+
+// ─── Logo loader — converts /favicon.png to base64 for reliable PDF capture ──
+const useLogoBase64 = () => {
+  const [src, setSrc] = useState('/favicon.png')
+
+  useEffect(() => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width  = img.naturalWidth  || img.width
+        canvas.height = img.naturalHeight || img.height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+        setSrc(canvas.toDataURL('image/png'))
+      } catch {
+        // taint error — keep original src
+      }
+    }
+    img.onerror = () => setSrc('/logo.png') // fallback to logo.png
+    img.src = '/favicon.png'
+  }, [])
+
+  return src
 }
 
 // ─── Decorative Corners ───────────────────────────────────────────────────────
@@ -170,12 +246,13 @@ const BottomCorner = () => (
   </>
 )
 
-// ─── Page Header ──────────────────────────────────────────────────────────────
-const PageHeader = () => (
+// ─── Page Header — uses base64 logo ──────────────────────────────────────────
+const PageHeader = ({ logoSrc }) => (
   <div style={{ textAlign: 'center', marginBottom: 10, position: 'relative', zIndex: 10 }}>
     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 5 }}>
       <img
-        src="/logo.png" alt="Scarlet Interior Design"
+        src={logoSrc}
+        alt="Scarlet Interior Design"
         style={{ height: 62, width: 'auto', objectFit: 'contain', display: 'block' }}
       />
     </div>
@@ -214,7 +291,7 @@ const ClientMeta = ({ q }) => (
 // ─── Shared cell style ─────────────────────────────────────────────────────────
 const td = (extra = {}) => ({
   border: `1px solid ${R.gray}`,
-  padding: '5px 8px',
+  padding: '6px 8px',
   verticalAlign: 'middle',
   textAlign: 'left',
   color: R.black,
@@ -239,7 +316,7 @@ const RenderScope = ({ block }) => (
     <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 700, textDecoration: 'underline', color: R.black, marginBottom: 6 }}>
       • {block.title}{block.continued ? ' (CONT.)' : ''}
     </div>
-    <div style={{ border: `1px solid ${R.gray}`, borderRadius: 3, overflow: 'hidden' }}>
+    <div style={{ border: `1px solid ${R.gray}`, borderRadius: 3, overflow: 'visible' }}>
       <div style={{ backgroundColor: R.red, color: '#fff', fontWeight: 700, fontSize: 12, padding: '6px 12px' }}>
         DESCRIPTION
       </div>
@@ -249,7 +326,7 @@ const RenderScope = ({ block }) => (
             key={item.id}
             style={{
               borderTop: `1px solid ${R.gray}`,
-              padding: '6px 10px',
+              padding: '7px 10px',
               backgroundColor: '#D8D8D8',
               fontSize: 12,
               fontWeight: 700,
@@ -260,33 +337,41 @@ const RenderScope = ({ block }) => (
             {item.text}
           </div>
         ) : (
-        <div key={item.id} style={{
-          display: 'grid',
-          gridTemplateColumns: '32px 1fr',
-          alignItems: 'start',
-          borderTop: `1px solid ${R.gray}`,
-          padding: '6px 10px',
-          fontSize: 11,
-          minHeight: 38,
-          backgroundColor: i % 2 ? R.offWhite : '#fff',
-        }}>
-          <span style={{
-            display: 'inline-flex', width: 20, height: 20,
-            alignItems: 'center', justifyContent: 'center',
-            borderRadius: 3, fontSize: 10, backgroundColor: R.gray,
-            flexShrink: 0, fontWeight: 600,
+          <div key={item.id} style={{
+            display: 'grid',
+            gridTemplateColumns: '32px 1fr',
+            alignItems: 'center',           // ← FIXED: was 'start', now 'center' for vertical centering
+            borderTop: `1px solid ${R.gray}`,
+            padding: '6px 10px',
+            fontSize: 11,
+            minHeight: 42,                  // ← slightly taller for breathing room
+            backgroundColor: i % 2 ? R.offWhite : '#fff',
+            boxSizing: 'border-box',
           }}>
-            {block.items.slice(0, i + 1).filter((x) => !x.isSubTitle).length}
-          </span>
-          <div>
-            <div style={{ lineHeight: '18px', color: R.black }}>{item.text}</div>
-            {item.paramValue ? (
-              <div style={{ fontSize: 10, color: '#666', lineHeight: '16px' }}>
-                Parameter: {item.paramValue} {item.paramLabel || ''}
-              </div>
-            ) : null}
+            <span style={{
+              display: 'inline-flex',
+              width: 20,
+              height: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 3,
+              fontSize: 10,
+              backgroundColor: R.gray,
+              flexShrink: 0,
+              fontWeight: 600,
+              alignSelf: 'center',          // ← ensures number badge is always centered
+            }}>
+              {block.items.slice(0, i + 1).filter((x) => !x.isSubTitle).length}
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ lineHeight: '18px', color: R.black }}>{item.text}</div>
+              {item.paramValue ? (
+                <div style={{ fontSize: 10, color: '#666', lineHeight: '16px', marginTop: 2 }}>
+                  Parameter: {item.paramValue} {item.paramLabel || ''}
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
         )
       ))}
     </div>
@@ -314,9 +399,9 @@ const RenderMaterial = ({ block }) => (
       <tbody>
         {block.rows.map((row, i) => (
           <tr key={row.id} style={{ backgroundColor: i % 2 ? R.offWhite : '#fff' }}>
-            <td style={td({ fontWeight: 600 })}>{row.material}</td>
-            <td style={td()}>{row.specification}</td>
-            <td style={td()}>{row.clarity}</td>
+            <td style={td({ fontWeight: 600, verticalAlign: 'middle' })}>{row.material}</td>
+            <td style={td({ verticalAlign: 'middle' })}>{row.specification}</td>
+            <td style={td({ verticalAlign: 'middle' })}>{row.clarity}</td>
           </tr>
         ))}
       </tbody>
@@ -399,7 +484,7 @@ const LastFooter = () => (
   </div>
 )
 
-const renderBlock = (block) => {
+const renderBlock = (block, logoSrc) => {
   switch (block.type) {
     case 'intro':    return <RenderIntro    key={block.key} block={block}/>
     case 'scope':    return <RenderScope    key={block.key} block={block}/>
@@ -413,9 +498,10 @@ const renderBlock = (block) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function QuotationPDF({ quotation }) {
-  const blocks = buildBlocks(quotation)
-  const pages  = paginate(blocks)
-  const total  = pages.length
+  const blocks  = buildBlocks(quotation)
+  const pages   = paginate(blocks)
+  const total   = pages.length
+  const logoSrc = useLogoBase64()   // ← base64 logo, guaranteed to render in html2canvas
 
   return (
     <div style={{
@@ -436,7 +522,7 @@ export default function QuotationPDF({ quotation }) {
               height:    PAGE_H,
               minHeight: PAGE_H,
               maxHeight: PAGE_H,
-              overflow: 'hidden',
+              overflow:  'hidden',
               backgroundColor: '#ffffff',
               boxSizing: 'border-box',
               padding: `${PAD_TOP}px ${PAD_X}px ${PAD_BOT}px`,
@@ -447,12 +533,12 @@ export default function QuotationPDF({ quotation }) {
             {isFirst && <TopCorner/>}
             {isLast  && <BottomCorner/>}
 
-            {isFirst && <PageHeader/>}
+            {isFirst && <PageHeader logoSrc={logoSrc}/>}
             {isFirst && <ClientMeta q={quotation}/>}
 
-            {/* Content area */}
-            <div style={{ overflow: 'hidden' }}>
-              {pageBlocks.map(renderBlock)}
+            {/* Content area — overflow visible so rows never get clipped */}
+            <div style={{ overflow: 'visible' }}>
+              {pageBlocks.map((block) => renderBlock(block, logoSrc))}
             </div>
 
             {isLast && <LastFooter/>}

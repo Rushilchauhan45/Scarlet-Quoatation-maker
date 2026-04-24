@@ -16,21 +16,23 @@ const sanitizeFileName = (name = 'quotation.pdf') => {
 
 const waitForRender = () =>
   new Promise((resolve) => {
-    // Three animation frames + small delay ensures fonts, layout, images settled
+    // Four animation frames + slightly longer delay ensures
+    // base64 logo, fonts, layout all settled before capture
     requestAnimationFrame(() =>
       requestAnimationFrame(() =>
-        requestAnimationFrame(() => setTimeout(resolve, 80))
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => setTimeout(resolve, 150))
+        )
       )
     )
   })
 
 const capturePage = async (pageEl) => {
-  // Force the element to its exact declared size before capture
   const w = PAGE_PX_W
   const h = PAGE_PX_H
 
   const canvas = await html2canvas(pageEl, {
-    scale: 3,                    // 3× = ~288 DPI — sharp text, no blur on zoom
+    scale: 3,                    // 3× = ~288 DPI — sharp text
     useCORS: true,
     allowTaint: false,
     backgroundColor: '#ffffff',
@@ -44,7 +46,6 @@ const capturePage = async (pageEl) => {
     logging: false,
     foreignObjectRendering: false,
     onclone: (_doc, el) => {
-      // Guarantee background & no shadow in capture clone
       el.style.background    = '#ffffff'
       el.style.boxShadow     = 'none'
       el.style.border        = 'none'
@@ -55,6 +56,15 @@ const capturePage = async (pageEl) => {
       el.style.maxHeight     = `${h}px`
       el.style.overflow      = 'hidden'
       el.style.boxSizing     = 'border-box'
+
+      // ─── Ensure all images inside clone are fully loaded ─────────────────
+      const images = el.querySelectorAll('img')
+      images.forEach((img) => {
+        // If image is already a base64 data URL, nothing to do
+        if (img.src && img.src.startsWith('data:')) return
+        // Otherwise force crossorigin so html2canvas can read it
+        img.crossOrigin = 'anonymous'
+      })
     },
   })
 
@@ -78,7 +88,6 @@ export const generateQuotationPDF = async (containerEl, fileName = 'quotation.pd
     compress: true,
   })
 
-  // A4 in mm
   const mmW = pdf.internal.pageSize.getWidth()   // 210
   const mmH = pdf.internal.pageSize.getHeight()  // 297
 
@@ -89,23 +98,23 @@ export const generateQuotationPDF = async (containerEl, fileName = 'quotation.pd
     hadClass = document.body.classList.contains('pdf-export-mode')
     if (!hadClass) document.body.classList.add('pdf-export-mode')
 
-    // Wait for fonts + layout
+    // Wait for fonts + layout + base64 logo to be fully painted
     if (document.fonts?.ready) await document.fonts.ready
     await waitForRender()
 
     for (let i = 0; i < pageElements.length; i++) {
       const canvas  = await capturePage(pageElements[i])
-      const imgData = canvas.toDataURL('image/png')        // lossless PNG — no JPEG blur
+      const imgData = canvas.toDataURL('image/png')
 
       if (i > 0) pdf.addPage('a4', 'portrait')
 
       pdf.addImage(
         imgData,
         'PNG',
-        0, 0,         // x, y — fill edge-to-edge
-        mmW, mmH,     // width, height in mm
-        `p${i}`,      // alias (deduplication key)
-        'NONE',       // ← NO compression — keeps full PNG quality
+        0, 0,
+        mmW, mmH,
+        `p${i}`,
+        'NONE',
       )
     }
 
