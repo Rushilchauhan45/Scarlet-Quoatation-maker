@@ -1,4 +1,5 @@
 import { threeBhkTurnkeyTemplates } from './threeBhkTurnkeyTemplates'
+import { standardMaterialSpec, premiumMaterialSpec, luxuryMaterialSpec } from './materialSpecData'
 
 export const paymentSchedules = {
   'turnkey-6stage': [
@@ -32,25 +33,32 @@ export const defaultNotes = [
   'All taxes are excluding from these rates.',
 ]
 
-const baseMaterialSpec = [
-  { material: 'False ceiling', specification: "Khushbu company's gypsum Sheet, Size - 12.5mm with 8 kg capacity", clarity: '' },
-  { material: 'Fabric for Curtain & Lining Work', specification: 'Sarrom / GM / F&F / Divine / Ddecor Etc Depending on Selection', clarity: 'Fabric price : approximately 400/- Rs. Per Meter' },
-  { material: 'Light fitting', specification: 'G Jaks or Similar', clarity: 'Panel Lights & Rope Lights with minimum 02 Years warranty.' },
-  { material: 'Inner Laminate', specification: '0.8 MM Fabric or Wooden Finish', clarity: 'Durian or Similar 400/- Rs. Per Sheet' },
-  { material: 'Outer Laminate', specification: 'Levin/ Sunmica / Durian / Airolam / Armany and many other brands depend on selection', clarity: 'Average price is 1200/- Rs. Per Sheet for entire house.' },
-  { material: 'Ply Wood', specification: 'Alternate Ply IS303 MR Grade plywood', clarity: 'Approximately Rs. 62/- to Rs. 65/- Per Square ft.' },
-  { material: 'Hardware', specification: 'Vita Or Similar brand', clarity: 'Standard-grade hardware considered; premium upgrades charged additionally.' },
-]
 
-const makeTemplate = ({ title, introText, sections, estimatedCost, paymentSchedule }) => ({
+const makeTemplate = ({
   title,
   introText,
   sections,
-  materialSpec: baseMaterialSpec,
+  estimatedCost,
+  paymentSchedule,
+  packageType = 'standard',
+  materialSpec,
+}) => ({
+  title,
+  introText,
+  sections,
+  materialSpec: materialSpec ?? getMaterialSpec(packageType),
   notes: defaultNotes,
   paymentSchedule,
   estimatedCost,
+  packageType,
 })
+
+const getMaterialSpec = (pkg) => {
+  const safePackage = String(pkg || 'standard').toLowerCase()
+  if (safePackage === 'premium') return premiumMaterialSpec
+  if (safePackage === 'luxurious' || safePackage === 'luxury') return luxuryMaterialSpec
+  return standardMaterialSpec
+}
 
 const commonTurnkeySections2Bhk = [
   {
@@ -126,7 +134,7 @@ export const templates = {
       },
     ],
     materialSpec: [
-      ...baseMaterialSpec,
+      ...standardMaterialSpec,
       { material: 'Sofa', specification: '5 Seaters', clarity: 'Rs. 40,000/- Sofa Set' },
       { material: 'Centre table', specification: 'Imported', clarity: 'Rs. 8,000/- Maximum' },
       { material: 'Total light fixtures', specification: '20 Pieces', clarity: 'More than 20 fixtures will be charged extra.' },
@@ -139,6 +147,7 @@ export const templates = {
     title: 'Quotation For 2 BHK Interior Design',
     introText: 'Premium turnkey quotation including upgraded finishes and enhanced modular solutions for 2 BHK residence.',
     sections: commonTurnkeySections2Bhk,
+    packageType: 'premium',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: '9,21,000',
   }),
@@ -146,6 +155,7 @@ export const templates = {
     title: 'Quotation For 3 BHK Interior Design',
     introText: threeBhkTurnkeyTemplates.STANDARD.introText,
     sections: threeBhkTurnkeyTemplates.STANDARD.sections,
+    packageType: 'standard',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: threeBhkTurnkeyTemplates.STANDARD.estimatedCost,
   }),
@@ -153,6 +163,7 @@ export const templates = {
     title: 'Quotation For 3 BHK Interior Design',
     introText: threeBhkTurnkeyTemplates.PREMIUM.introText,
     sections: threeBhkTurnkeyTemplates.PREMIUM.sections,
+    packageType: 'premium',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: threeBhkTurnkeyTemplates.PREMIUM.estimatedCost,
   }),
@@ -160,6 +171,7 @@ export const templates = {
     title: 'Quotation For 3 BHK Interior Design',
     introText: threeBhkTurnkeyTemplates.LUXURIOUS.introText,
     sections: threeBhkTurnkeyTemplates.LUXURIOUS.sections,
+    packageType: 'luxurious',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: threeBhkTurnkeyTemplates.LUXURIOUS.estimatedCost,
   }),
@@ -167,6 +179,7 @@ export const templates = {
     title: 'Quotation For 4 BHK Interior Design',
     introText: 'Standard turnkey interior quotation for 4 BHK residences.',
     sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 3', items: ['Bed with storage', 'Wardrobe', 'Curtains', 'Light fittings'] }],
+    packageType: 'standard',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: '23,99,000',
   }),
@@ -174,6 +187,7 @@ export const templates = {
     title: 'Quotation For 4 BHK Interior Design',
     introText: 'Premium turnkey interior package for 4 BHK with upgraded hardware and finishes.',
     sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 3', items: ['Premium bed', 'Premium wardrobe', 'False ceiling', 'Light fittings'] }],
+    packageType: 'premium',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: '27,99,000',
   }),
@@ -181,6 +195,7 @@ export const templates = {
     title: 'Quotation For 4 BHK Interior Design',
     introText: 'Luxurious turnkey interior package for 4 BHK with high-end detailing and finishes.',
     sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 3', items: ['Luxury bed', 'Luxury wardrobe', 'Designer wall treatment', 'Premium light fittings'] }],
+    packageType: 'luxurious',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: '31,99,000',
   }),
@@ -217,6 +232,7 @@ export const templates = {
     title: 'Quotation For Interior Designing',
     introText: '3 BHK designing quotation for 3D visualization and interior planning services.',
     sections: [{ name: 'Scope of Work', items: ['3D renders [12 views]', '2D working drawings', 'Mood board', 'Site visits'] }],
+    materialSpec: [],
     paymentSchedule: 'designing-4stage',
     estimatedCost: '1,20,000',
   }),
@@ -224,6 +240,8 @@ export const templates = {
     title: 'Quotation For Interior Designing',
     introText: '3 BHK premium designing quotation with detailed visualization and broader drawing coverage.',
     sections: [{ name: 'Scope of Work', items: ['3D renders [16 views]', '2D working drawings with sections', 'Mood board + material guidance', 'Site visits'] }],
+    materialSpec: [],
+    packageType: 'premium',
     paymentSchedule: 'designing-4stage',
     estimatedCost: '1,45,000',
   }),
@@ -231,6 +249,8 @@ export const templates = {
     title: 'Quotation For Interior Designing',
     introText: '3 BHK luxurious designing quotation with advanced 3D detailing and complete concept support.',
     sections: [{ name: 'Scope of Work', items: ['3D renders [20 views]', '2D working drawings with advanced detailing', 'Mood board + curated finishes', 'Site visits'] }],
+    materialSpec: [],
+    packageType: 'luxurious',
     paymentSchedule: 'designing-4stage',
     estimatedCost: '1,75,000',
   }),
@@ -238,6 +258,7 @@ export const templates = {
     title: 'Quotation For Interior Designing',
     introText: '4 BHK designing quotation for complete planning and visualization services.',
     sections: [{ name: 'Scope of Work', items: ['3D renders [15 views]', '2D working drawings', 'Material coordination', 'Site visits'] }],
+    materialSpec: [],
     paymentSchedule: 'designing-4stage',
     estimatedCost: '1,50,000',
   }),
@@ -245,6 +266,8 @@ export const templates = {
     title: 'Quotation For Interior Designing',
     introText: '4 BHK premium designing quotation with richer concept coverage and additional drawing support.',
     sections: [{ name: 'Scope of Work', items: ['3D renders [20 views]', '2D working drawings with sections', 'Material coordination', 'Site visits'] }],
+    materialSpec: [],
+    packageType: 'premium',
     paymentSchedule: 'designing-4stage',
     estimatedCost: '1,80,000',
   }),
@@ -252,6 +275,8 @@ export const templates = {
     title: 'Quotation For Interior Designing',
     introText: '4 BHK luxurious designing quotation with complete visual detailing and premium concept development.',
     sections: [{ name: 'Scope of Work', items: ['3D renders [24 views]', '2D detailed working drawings', 'Material coordination + premium palette', 'Site visits'] }],
+    materialSpec: [],
+    packageType: 'luxurious',
     paymentSchedule: 'designing-4stage',
     estimatedCost: '2,20,000',
   }),

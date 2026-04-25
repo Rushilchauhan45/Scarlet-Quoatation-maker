@@ -363,13 +363,8 @@ const RenderScope = ({ block }) => (
             }}>
               {block.items.slice(0, i + 1).filter((x) => !x.isSubTitle).length}
             </span>
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ lineHeight: '18px', color: R.black }}>{item.text}</div>
-              {item.paramValue ? (
-                <div style={{ fontSize: 10, color: '#666', lineHeight: '16px', marginTop: 2 }}>
-                  Parameter: {item.paramValue} {item.paramLabel || ''}
-                </div>
-              ) : null}
+            <div style={{ display: 'flex', alignItems: 'center', minHeight: 26 }}>
+              <div style={{ lineHeight: '1.25', color: R.black, margin: 0 }}>{item.text}</div>
             </div>
           </div>
         )
@@ -399,9 +394,15 @@ const RenderMaterial = ({ block }) => (
       <tbody>
         {block.rows.map((row, i) => (
           <tr key={row.id} style={{ backgroundColor: i % 2 ? R.offWhite : '#fff' }}>
-            <td style={td({ fontWeight: 600, verticalAlign: 'middle' })}>{row.material}</td>
-            <td style={td({ verticalAlign: 'middle' })}>{row.specification}</td>
-            <td style={td({ verticalAlign: 'middle' })}>{row.clarity}</td>
+            <td style={td({ fontWeight: 600, verticalAlign: 'middle' })}>
+              <div style={{ display: 'flex', alignItems: 'center', minHeight: 20 }}>{row.material}</div>
+            </td>
+            <td style={td({ verticalAlign: 'middle' })}>
+              <div style={{ display: 'flex', alignItems: 'center', minHeight: 20 }}>{row.specification}</div>
+            </td>
+            <td style={td({ verticalAlign: 'middle' })}>
+              <div style={{ display: 'flex', alignItems: 'center', minHeight: 20 }}>{row.clarity}</div>
+            </td>
           </tr>
         ))}
       </tbody>
