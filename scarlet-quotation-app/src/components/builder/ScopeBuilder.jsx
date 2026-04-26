@@ -137,6 +137,29 @@ export default function ScopeBuilder({ sections, onChange }) {
     })
   }
 
+  const updateRate = (sectionId, itemId, rate) => {
+    updateItem(sectionId, itemId, (item) => {
+      const nextItem = {
+        ...item,
+        pricing: {
+          ...(item.pricing || {}),
+          rate,
+        },
+      }
+
+      const autoAmount = computeItemAutoAmount(nextItem)
+      if (autoAmount === null) {
+        return nextItem
+      }
+
+      return {
+        ...nextItem,
+        amount: String(autoAmount),
+        manualAmount: false,
+      }
+    })
+  }
+
   const updateAmount = (sectionId, itemId, amount) => {
     updateItem(sectionId, itemId, (item) => {
       const hasPricing = Number.isFinite(parseNumericInput(item?.pricing?.rate))
@@ -157,6 +180,14 @@ export default function ScopeBuilder({ sections, onChange }) {
     <div className="space-y-4">
       {safeSections.map((section) => (
         <div key={section.id} className="rounded-2xl border border-[#E8E8E8] bg-white p-4">
+          {(() => {
+            const hasRateColumn = section.items.some((item) => item?.pricing && !item.hideInPdf)
+            const gridClass = hasRateColumn
+              ? 'grid grid-cols-1 gap-2 rounded-xl border border-[#E8E8E8] p-2 md:grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] md:items-center md:border-0 md:p-0'
+              : 'grid grid-cols-1 gap-2 rounded-xl border border-[#E8E8E8] p-2 md:grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] md:items-center md:border-0 md:p-0'
+
+            return (
+              <>
           <div className="mb-3 flex items-center gap-2">
             <input
               value={section.name}
@@ -168,18 +199,21 @@ export default function ScopeBuilder({ sections, onChange }) {
             </button>
           </div>
 
-          <div className="mb-2 hidden grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] gap-2 px-1 text-xs font-semibold uppercase text-[#1A1A1A]/70 md:grid">
+          <div
+            className={`mb-2 hidden gap-2 px-1 text-xs font-semibold uppercase text-[#1A1A1A]/70 md:grid ${hasRateColumn ? 'grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px]' : 'grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px]'}`}
+          >
             <span>#</span>
             <span>Item Name</span>
             <span>Parameter Label</span>
             <span>Param Value</span>
+            {hasRateColumn ? <span>Rate</span> : null}
             <span>Amount</span>
             <span />
           </div>
 
           <div className="space-y-2">
             {section.items.filter((item) => !item.hideInPdf).map((item, index) => (
-              <div key={item.id} className="grid grid-cols-1 gap-2 rounded-xl border border-[#E8E8E8] p-2 md:grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] md:items-center md:border-0 md:p-0">
+              <div key={item.id} className={gridClass}>
                 <span className="w-9 rounded bg-[#E8E8E8] px-2 py-1 text-center text-xs text-[#1A1A1A]">{index + 1}</span>
                 <input
                   value={item.text}
@@ -199,6 +233,20 @@ export default function ScopeBuilder({ sections, onChange }) {
                   className="rounded-lg border border-[#E8E8E8] px-3 py-2 text-sm"
                   placeholder="Parameter value"
                 />
+                {hasRateColumn ? (
+                  item?.pricing ? (
+                    <input
+                      value={item?.pricing?.rate ?? ''}
+                      onChange={(e) => updateRate(section.id, item.id, e.target.value)}
+                      className="rounded-lg border border-[#E8E8E8] px-3 py-2 text-sm"
+                      placeholder="Rate"
+                    />
+                  ) : (
+                    <span className="rounded-lg border border-dashed border-[#E8E8E8] px-3 py-2 text-sm text-[#1A1A1A]/50">
+                      —
+                    </span>
+                  )
+                ) : null}
                 <input
                   value={item.amount}
                   onChange={(e) => updateAmount(section.id, item.id, e.target.value)}
@@ -215,6 +263,9 @@ export default function ScopeBuilder({ sections, onChange }) {
           <Button variant="secondary" className="mt-3" onClick={() => addItem(section.id)}>
             <Plus size={14} className="mr-2 inline" /> Add Item
           </Button>
+              </>
+            )
+          })()}
         </div>
       ))}
 
