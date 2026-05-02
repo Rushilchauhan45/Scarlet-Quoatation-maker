@@ -1,13 +1,11 @@
-import { Globe, Instagram } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { formatDateDDMMYYYY, formatIndianCurrency } from '../../utils/formatCurrency'
+import { formatIndianCurrency } from '../../utils/formatCurrency'
 
 // ─── Brand Colors ─────────────────────────────────────────────────────────────
 const R = {
   red:      '#C0392B',
-  darkRed:  '#922B21',
   black:    '#1A1A1A',
-  offWhite: '#FAFAFA',
+  offWhite: '#FDFCF8',
   gray:     '#E8E8E8',
 }
 
@@ -19,9 +17,9 @@ const PAD_TOP  = 44
 const PAD_BOT  = 32
 
 // Estimated heights of fixed chrome (px)
-const HEADER_H   = 108
-const CLIENT_H   = 90
-const FOOTER_H   = 128
+const HEADER_H   = 214
+const CLIENT_H   = 0
+const FOOTER_H   = 260
 const PAGENO_H   = 22
 
 const CONTENT_FIRST = PAGE_H - PAD_TOP - PAD_BOT - HEADER_H - CLIENT_H - PAGENO_H
@@ -42,7 +40,7 @@ const smartChunk = (items = [], maxRows) => {
   let current = []
   let count = 0  // only count non-subtitle rows against the limit
 
-  items.forEach((item, i) => {
+  items.forEach((item) => {
     const isSubTitle = item.isSubTitle
 
     if (!isSubTitle && count >= maxRows) {
@@ -185,9 +183,9 @@ const paginate = (blocks) => {
   return pages
 }
 
-// ─── Logo loader — converts /favicon.png to base64 for reliable PDF capture ──
-const useLogoBase64 = () => {
-  const [src, setSrc] = useState('/favicon.png')
+// ─── Image loader for header/footer ──────────────────────────────────────────
+const useImageBase64 = (path) => {
+  const [src, setSrc] = useState(path)
 
   useEffect(() => {
     const img = new Image()
@@ -204,86 +202,21 @@ const useLogoBase64 = () => {
         // taint error — keep original src
       }
     }
-    img.onerror = () => setSrc('/logo.png') // fallback to logo.png
-    img.src = '/favicon.png'
-  }, [])
+    img.src = path
+  }, [path])
 
   return src
 }
 
-// ─── Decorative Corners ───────────────────────────────────────────────────────
-const TopCorner = () => (
-  <>
-    <div style={{
-      position: 'absolute', top: 0, right: 0, zIndex: 1,
-      width: 0, height: 0, borderStyle: 'solid',
-      borderWidth: '0 165px 118px 0',
-      borderColor: `transparent ${R.darkRed} transparent transparent`,
-    }}/>
-    <div style={{
-      position: 'absolute', top: 0, right: 0, zIndex: 2,
-      width: 0, height: 0, borderStyle: 'solid',
-      borderWidth: '0 165px 96px 0',
-      borderColor: `transparent ${R.red} transparent transparent`,
-    }}/>
-  </>
-)
-
-const BottomCorner = () => (
-  <>
-    <div style={{
-      position: 'absolute', bottom: 0, left: 0, zIndex: 1,
-      width: 0, height: 0, borderStyle: 'solid',
-      borderWidth: '120px 0 0 170px',
-      borderColor: `transparent transparent transparent ${R.black}`,
-    }}/>
-    <div style={{
-      position: 'absolute', bottom: 0, left: 0, zIndex: 2,
-      width: 0, height: 0, borderStyle: 'solid',
-      borderWidth: '96px 0 0 136px',
-      borderColor: `transparent transparent transparent #2B2B2B`,
-    }}/>
-  </>
-)
-
-// ─── Page Header — uses base64 logo ──────────────────────────────────────────
-const PageHeader = ({ logoSrc }) => (
-  <div style={{ textAlign: 'center', marginBottom: 10, position: 'relative', zIndex: 10 }}>
-    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 5 }}>
+// ─── Page Header ──────────────────────────────────────────────────────────────
+const PageHeader = ({ headerSrc }) => (
+  <div style={{ textAlign: 'center', marginBottom: 16, position: 'relative', zIndex: 10 }}>
+    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 0 }}>
       <img
-        src={logoSrc}
-        alt="Scarlet Interior Design"
-        style={{ height: 62, width: 'auto', objectFit: 'contain', display: 'block' }}
+        src={headerSrc}
+        alt="Header"
+        style={{ width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }}
       />
-    </div>
-    <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.35em', color: R.black }}>
-      SCARLET INTERIOR DESIGN
-    </div>
-    <div style={{ fontSize: 11, fontStyle: 'italic', color: R.darkRed, marginTop: 2 }}>
-      Beauty in Simplicity
-    </div>
-    <div style={{ height: 2, width: '100%', backgroundColor: R.red, marginTop: 6 }}/>
-  </div>
-)
-
-// ─── Client Meta ──────────────────────────────────────────────────────────────
-const ClientMeta = ({ q }) => (
-  <div style={{
-    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14,
-    fontSize: 11, lineHeight: '19px', marginBottom: 12,
-    position: 'relative', zIndex: 10, color: R.black,
-  }}>
-    <div>
-      <div style={{ fontWeight: 700 }}>Client Name: {q.clientName || '-'}</div>
-      <div>Address: {q.address || '-'}</div>
-      <div>Contact: {q.contactNumber || '-'}</div>
-      <div>GST No.: {q.gstNumber || '-'}</div>
-    </div>
-    <div style={{ textAlign: 'right' }}>
-      <div style={{ fontWeight: 700 }}>DATE: {formatDateDDMMYYYY(q.date) || '-'}</div>
-      <div>Quotation No.: {q.quotationNumber || '-'}</div>
-      <div>Type: {q.quotationType || 'Turnkey Interior'}</div>
-      <div>Package: {q.packageType || 'STANDARD'}</div>
     </div>
   </div>
 )
@@ -299,26 +232,31 @@ const td = (extra = {}) => ({
   ...extra,
 })
 
+const formatAmountForPdf = (value) => String(formatIndianCurrency(value)).replace(/^₹/, '')
+
 // ─── Block Renderers ──────────────────────────────────────────────────────────
 const RenderIntro = ({ block }) => (
   <div style={{ marginBottom: 14, position: 'relative', zIndex: 10 }}>
-    <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 700, textDecoration: 'underline', color: R.darkRed, marginBottom: 8 }}>
+    <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 700, color: R.red, marginBottom: 8 }}>
       {block.title}
+    </div>
+    <div style={{ fontSize: 12, lineHeight: '22px', color: R.black, marginBottom: 4 }}>
+      Dear Sir/Ma&apos;am,
     </div>
     <div style={{ fontSize: 12, lineHeight: '22px', textIndent: '2em', color: R.black }}>
       {block.introText}
+    </div>
+    <div style={{ fontSize: 14, fontWeight: 700, marginTop: 10, textDecoration: 'underline' }}>
+      SCOPE OF WORK
     </div>
   </div>
 )
 
 const RenderScope = ({ block }) => (
   <div style={{ marginBottom: 14, position: 'relative', zIndex: 10 }}>
-    <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 700, textDecoration: 'underline', color: R.black, marginBottom: 6 }}>
-      • {block.title}{block.continued ? ' (CONT.)' : ''}
-    </div>
     <div style={{ border: `1px solid ${R.gray}`, borderRadius: 3, overflow: 'visible' }}>
       <div style={{ backgroundColor: R.red, color: '#fff', fontWeight: 700, fontSize: 12, padding: '6px 12px' }}>
-        DESCRIPTION
+        {`${block.title}${block.continued ? ' (CONT.)' : ''}`.toUpperCase()}
       </div>
       {block.items.map((item, i) => (
         item.isSubTitle ? (
@@ -370,6 +308,26 @@ const RenderScope = ({ block }) => (
         )
       ))}
     </div>
+  </div>
+)
+
+const LastFooter = ({ footerSrc }) => (
+  <div style={{ marginTop: 18, position: 'relative', zIndex: 10 }}>
+    <div style={{ textAlign: 'center', fontSize: 11, color: R.black, marginBottom: 2 }}>
+      We look forward to transforming your space with elegance and functionality.
+    </div>
+    <div style={{ textAlign: 'center', fontSize: 11, color: R.black, marginBottom: 10 }}>
+      Thank you for considering Scarlet Interior Design.
+    </div>
+    <div style={{ fontSize: 11, marginBottom: 8, color: R.black }}>Best Regards,</div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+      <div style={{ fontWeight: 700, letterSpacing: '0.05em' }}>SCARLET INTERIOR DESIGN</div>
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ height: 1, width: 140, backgroundColor: R.black, marginLeft: 'auto', marginBottom: 4 }}/>
+        <div style={{ fontWeight: 600 }}>Client Signature</div>
+      </div>
+    </div>
+    <img src={footerSrc} alt="Footer" style={{ width: '100%', height: 'auto', display: 'block' }} />
   </div>
 )
 
@@ -447,45 +405,13 @@ const RenderTotal = ({ block }) => (
   }}>
     <div style={{ padding: '8px 14px', backgroundColor: R.red, color: '#fff' }}>Total Estimated Cost</div>
     <div style={{ padding: '8px 14px', backgroundColor: R.offWhite, color: R.black }}>
-      {formatIndianCurrency(block.amount || '')} Rs.
+      {formatAmountForPdf(block.amount || '')} Rs.
     </div>
   </div>
 )
 
 // ─── Last Page Footer ─────────────────────────────────────────────────────────
-const LastFooter = () => (
-  <div style={{ fontSize: 11, color: R.black, marginTop: 12, position: 'relative', zIndex: 10 }}>
-    <div style={{ textAlign: 'center', marginBottom: 3 }}>
-      We look forward to transforming your space with elegance and functionality.
-    </div>
-    <div style={{ textAlign: 'center', marginBottom: 10 }}>
-      Thank you for considering Scarlet Interior Design.
-    </div>
-    <div style={{ fontWeight: 600, marginBottom: 10 }}>Best Regards,</div>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 10 }}>
-      <div style={{ fontWeight: 700, letterSpacing: '0.05em' }}>SCARLET INTERIOR DESIGN</div>
-      <div style={{ textAlign: 'right' }}>
-        <div style={{ height: 1, width: 140, backgroundColor: R.black, marginLeft: 'auto', marginBottom: 4 }}/>
-        <div style={{ fontWeight: 600 }}>Client Signature</div>
-      </div>
-    </div>
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      gap: 20, borderTop: `1px solid ${R.gray}`, paddingTop: 8,
-    }}>
-      <a href="https://scarletinteriordesign.com/"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: R.black, textDecoration: 'none' }}>
-        <Globe size={12}/><span>scarletinteriordesign.com</span>
-      </a>
-      <a href="https://www.instagram.com/scarletinteriordesigns"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: R.black, textDecoration: 'none' }}>
-        <Instagram size={12}/><span>@scarletinteriordesigns</span>
-      </a>
-    </div>
-  </div>
-)
-
-const renderBlock = (block, logoSrc) => {
+const renderBlock = (block) => {
   switch (block.type) {
     case 'intro':    return <RenderIntro    key={block.key} block={block}/>
     case 'scope':    return <RenderScope    key={block.key} block={block}/>
@@ -502,7 +428,8 @@ export default function QuotationPDF({ quotation }) {
   const blocks  = buildBlocks(quotation)
   const pages   = paginate(blocks)
   const total   = pages.length
-  const logoSrc = useLogoBase64()   // ← base64 logo, guaranteed to render in html2canvas
+  const headerSrc = useImageBase64('/Header.png')
+  const footerSrc = useImageBase64('/Footer.png')
 
   return (
     <div style={{
@@ -524,25 +451,21 @@ export default function QuotationPDF({ quotation }) {
               minHeight: PAGE_H,
               maxHeight: PAGE_H,
               overflow:  'hidden',
-              backgroundColor: '#ffffff',
+              backgroundColor: '#f8f7f2',
               boxSizing: 'border-box',
               padding: `${PAD_TOP}px ${PAD_X}px ${PAD_BOT}px`,
               display: 'flex',
               flexDirection: 'column',
             }}
           >
-            {isFirst && <TopCorner/>}
-            {isLast  && <BottomCorner/>}
-
-            {isFirst && <PageHeader logoSrc={logoSrc}/>}
-            {isFirst && <ClientMeta q={quotation}/>}
+            {isFirst && <PageHeader headerSrc={headerSrc}/>}
 
             {/* Content area — overflow visible so rows never get clipped */}
             <div style={{ overflow: 'visible' }}>
-              {pageBlocks.map((block) => renderBlock(block, logoSrc))}
+              {pageBlocks.map((block) => renderBlock(block))}
             </div>
 
-            {isLast && <LastFooter/>}
+            {isLast ? <LastFooter footerSrc={footerSrc} /> : null}
 
             <div style={{
               textAlign: 'center', fontSize: 10, color: '#888',

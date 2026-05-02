@@ -1,4 +1,6 @@
 import { threeBhkTurnkeyTemplates } from './threeBhkTurnkeyTemplates'
+import { twoBhkTurnkeyTemplates } from './twoBhkTurnkeyTemplates'
+import { fourBhkTurnkeyTemplates } from './fourBhkTurnkeyTemplates'
 import { standardMaterialSpec, premiumMaterialSpec, luxuryMaterialSpec } from './materialSpecData'
 
 export const paymentSchedules = {
@@ -99,49 +101,12 @@ const commonTurnkeySections2Bhk = [
 export const templates = {
   '2BHK-turnkey-standard': {
     title: 'Quotation For 2 BHK Interior Design',
-    introText:
-      'Thank you for your inquiry. With reference to our recent discussion, we are pleased to share our basic interior package quotation including furniture and essential decor work for 2 BHK residence.',
-    sections: [
-      ...commonTurnkeySections2Bhk,
-      {
-        name: 'MASTER BEDROOM',
-        items: [
-          'Bed in laminate finish with hydraulic storage : 5\'-6"x6\'-6"',
-          'Decorative head board in tapestry finish : 5\'-6"x3\'-6"',
-          'Punning, or texture on main wall',
-          'Side table in laminate finish [Quantity - 1]',
-          'Dressing mirror',
-          'Wardrobe sliding/openable in laminate finish with full height loft',
-          'Roman Curtains with standard hardware',
-          'False ceiling in gypsum board with colour finish',
-          'Wall colour',
-          'Light fittings [Panel light and Rope light]',
-        ],
-      },
-      {
-        name: 'BEDROOM - 1',
-        items: [
-          'Bed in laminate finish with hydraulic storage : 5\'-0"x6\'-6"',
-          'Decorative head board in tapestry finish : 5\'-0"x2\'-6"',
-          'Side table in laminate finish [Quantity - 1]',
-          'Wardrobe sliding/openable in laminate finish with full height loft',
-          'Dressing mirror',
-          'False ceiling in gypsum board with colour finish',
-          'Roman Curtains with standard hardware',
-          'Wall color',
-          'Light fittings [Panel light and Rope light]',
-        ],
-      },
-    ],
-    materialSpec: [
-      ...standardMaterialSpec,
-      { material: 'Sofa', specification: '5 Seaters', clarity: 'Rs. 40,000/- Sofa Set' },
-      { material: 'Centre table', specification: 'Imported', clarity: 'Rs. 8,000/- Maximum' },
-      { material: 'Total light fixtures', specification: '20 Pieces', clarity: 'More than 20 fixtures will be charged extra.' },
-    ],
+    introText: twoBhkTurnkeyTemplates.STANDARD.introText,
+    sections: twoBhkTurnkeyTemplates.STANDARD.sections,
+    materialSpec: twoBhkTurnkeyTemplates.STANDARD.materialSpec,
     notes: defaultNotes,
     paymentSchedule: 'turnkey-6stage',
-    estimatedCost: '8,21,000',
+    estimatedCost: twoBhkTurnkeyTemplates.STANDARD.estimatedCost,
   },
   '2BHK-turnkey-premium': makeTemplate({
     title: 'Quotation For 2 BHK Interior Design',
@@ -155,6 +120,7 @@ export const templates = {
     title: 'Quotation For 3 BHK Interior Design',
     introText: threeBhkTurnkeyTemplates.STANDARD.introText,
     sections: threeBhkTurnkeyTemplates.STANDARD.sections,
+    materialSpec: threeBhkTurnkeyTemplates.STANDARD.materialSpec,
     packageType: 'standard',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: threeBhkTurnkeyTemplates.STANDARD.estimatedCost,
@@ -163,6 +129,7 @@ export const templates = {
     title: 'Quotation For 3 BHK Interior Design',
     introText: threeBhkTurnkeyTemplates.PREMIUM.introText,
     sections: threeBhkTurnkeyTemplates.PREMIUM.sections,
+    materialSpec: threeBhkTurnkeyTemplates.PREMIUM.materialSpec,
     packageType: 'premium',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: threeBhkTurnkeyTemplates.PREMIUM.estimatedCost,
@@ -171,33 +138,37 @@ export const templates = {
     title: 'Quotation For 3 BHK Interior Design',
     introText: threeBhkTurnkeyTemplates.LUXURIOUS.introText,
     sections: threeBhkTurnkeyTemplates.LUXURIOUS.sections,
+    materialSpec: threeBhkTurnkeyTemplates.LUXURIOUS.materialSpec,
     packageType: 'luxurious',
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: threeBhkTurnkeyTemplates.LUXURIOUS.estimatedCost,
   }),
   '4BHK-turnkey-standard': makeTemplate({
     title: 'Quotation For 4 BHK Interior Design',
-    introText: 'Standard turnkey interior quotation for 4 BHK residences.',
-    sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 3', items: ['Bed with storage', 'Wardrobe', 'Curtains', 'Light fittings'] }],
+    introText: fourBhkTurnkeyTemplates.STANDARD.introText,
+    sections: fourBhkTurnkeyTemplates.STANDARD.sections,
+    materialSpec: fourBhkTurnkeyTemplates.STANDARD.materialSpec,
     packageType: 'standard',
     paymentSchedule: 'turnkey-6stage',
-    estimatedCost: '23,99,000',
+    estimatedCost: fourBhkTurnkeyTemplates.STANDARD.estimatedCost,
   }),
   '4BHK-turnkey-premium': makeTemplate({
     title: 'Quotation For 4 BHK Interior Design',
-    introText: 'Premium turnkey interior package for 4 BHK with upgraded hardware and finishes.',
-    sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 3', items: ['Premium bed', 'Premium wardrobe', 'False ceiling', 'Light fittings'] }],
+    introText: fourBhkTurnkeyTemplates.PREMIUM.introText,
+    sections: fourBhkTurnkeyTemplates.PREMIUM.sections,
+    materialSpec: fourBhkTurnkeyTemplates.PREMIUM.materialSpec,
     packageType: 'premium',
     paymentSchedule: 'turnkey-6stage',
-    estimatedCost: '27,99,000',
+    estimatedCost: fourBhkTurnkeyTemplates.PREMIUM.estimatedCost,
   }),
   '4BHK-turnkey-luxurious': makeTemplate({
     title: 'Quotation For 4 BHK Interior Design',
-    introText: 'Luxurious turnkey interior package for 4 BHK with high-end detailing and finishes.',
-    sections: [...commonTurnkeySections2Bhk, { name: 'BEDROOM - 3', items: ['Luxury bed', 'Luxury wardrobe', 'Designer wall treatment', 'Premium light fittings'] }],
+    introText: fourBhkTurnkeyTemplates.LUXURIOUS.introText,
+    sections: fourBhkTurnkeyTemplates.LUXURIOUS.sections,
+    materialSpec: fourBhkTurnkeyTemplates.LUXURIOUS.materialSpec,
     packageType: 'luxurious',
     paymentSchedule: 'turnkey-6stage',
-    estimatedCost: '31,99,000',
+    estimatedCost: fourBhkTurnkeyTemplates.LUXURIOUS.estimatedCost,
   }),
   '2BHK-designing-standard': {
     title: 'Quotation For Interior Designing',

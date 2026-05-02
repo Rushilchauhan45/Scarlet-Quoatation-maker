@@ -18,8 +18,25 @@ export default function Step1ClientDetails({ quotation, update }) {
           <Input label="Contact Number" required value={quotation.contactNumber} onChange={(e) => update({ contactNumber: e.target.value })} />
           <Input label="Address" required className="sm:col-span-2" value={quotation.address} onChange={(e) => update({ address: e.target.value })} />
           <Input label="GST Number" value={quotation.gstNumber} onChange={(e) => update({ gstNumber: e.target.value })} />
+          <label className="sm:col-span-2 flex items-center justify-between rounded-xl border border-[#E8E8E8] bg-[#FAFAFA] px-3 py-2 text-sm">
+            <span className="font-medium text-[#1A1A1A]">Show GST Number in PDF</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={quotation.showGstInPdf ? 'true' : 'false'}
+              onClick={() => update({ showGstInPdf: !quotation.showGstInPdf })}
+              className={`relative h-6 w-11 rounded-full transition ${
+                quotation.showGstInPdf ? 'bg-[#C0392B]' : 'bg-[#C9C9C9]'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${
+                  quotation.showGstInPdf ? 'left-[22px]' : 'left-0.5'
+                }`}
+              />
+            </button>
+          </label>
           <Input label="Quotation Date" type="date" value={quotation.date} onChange={(e) => update({ date: e.target.value })} />
-          <Input label="Quotation Number" value={quotation.quotationNumber} readOnly />
         </div>
       </div>
 
