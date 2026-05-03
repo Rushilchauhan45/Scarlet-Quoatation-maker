@@ -5,7 +5,7 @@ import Step3Package from './steps/Step3Package'
 import Step4BuildQuotation from './steps/Step4BuildQuotation'
 import Step5PreviewDownload from './steps/Step5PreviewDownload'
 
-const labels = ['Client Details', 'Project Type', 'Package', 'Build Quotation', 'Preview & Download']
+const labels = ['Client Details', 'Project Type', 'Package', 'Build Quotation', 'Save & Download']
 
 export default function StepWizard({
   step,

@@ -32,7 +32,7 @@ export const useHistory = () => {
       data: quotation,
     }
 
-    const next = [...history, entry].slice(-7)
+    const next = [...history, entry]
     persist(next)
     return entry
   }

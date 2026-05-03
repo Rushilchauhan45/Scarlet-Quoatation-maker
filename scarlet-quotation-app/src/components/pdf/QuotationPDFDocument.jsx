@@ -20,10 +20,10 @@ const PAGE_PADDING_X = mm(14)
 const PAGE_PADDING_TOP = mm(14)
 const PAGE_PADDING_BOTTOM = mm(18)
 const PAGE_NUMBER_SPACE = mm(8)
-const FIRST_PAGE_RESERVED = mm(120)
+const FIRST_PAGE_RESERVED = mm(128)
 const LAST_PAGE_FOOTER_RESERVED = mm(74)
 
-const BLOCK_GAP = mm(4)
+const BLOCK_GAP = mm(4.2)
 
 Font.registerHyphenationCallback((word) => [word])
 
@@ -37,56 +37,56 @@ const formatAmountForPdf = (value) => String(formatIndianCurrency(value)).replac
 const estimateLines = (value, charsPerLine) =>
   Math.max(1, Math.ceil(String(value ?? '').trim().length / charsPerLine))
 
-const chunk = (rows = [], size = 1) => {
-  const out = []
-  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size))
-  return out
-}
-
 const estimateScopeBlockHeight = (block) => {
-  const base = mm(16)
+  const base = mm(17)
   const rowsHeight = (block.items || []).reduce((sum, item) => {
-    if (item?.isSubTitle) return sum + mm(8)
-    const textLines = estimateLines(item?.text, 82)
-    const rowHeight = Math.max(mm(8), textLines * mm(4.7) + mm(3))
+    if (item?.isSubTitle) return sum + mm(8.8)
+    const textLines = estimateLines(item?.text, 72)
+    const rowHeight = Math.max(mm(9.4), textLines * mm(5) + mm(3.2))
     return sum + rowHeight
   }, 0)
   return base + rowsHeight + BLOCK_GAP
 }
 
+const estimateMaterialRowHeight = (row) => {
+  const lines = Math.max(
+    estimateLines(row?.material, 19),
+    estimateLines(row?.specification, 26),
+    estimateLines(row?.clarity, 26),
+  )
+  return Math.max(mm(10), lines * mm(4.9) + mm(3.2))
+}
+
 const estimateMaterialBlockHeight = (block) => {
-  const base = mm(16)
-  const rowsHeight = (block.rows || []).reduce((sum, row) => {
-    const lines = Math.max(
-      estimateLines(row?.material, 22),
-      estimateLines(row?.specification, 30),
-      estimateLines(row?.clarity, 30),
-    )
-    return sum + Math.max(mm(9), lines * mm(4.6) + mm(3))
-  }, 0)
+  const base = mm(17)
+  const rowsHeight = (block.rows || []).reduce((sum, row) => sum + estimateMaterialRowHeight(row), 0)
   return base + rowsHeight + BLOCK_GAP
+}
+
+const estimateNoteRowHeight = (note) => {
+  const lines = estimateLines(note, 84)
+  return Math.max(mm(7), lines * mm(4.4))
 }
 
 const estimateNotesBlockHeight = (block) => {
-  const base = mm(10)
-  const rowsHeight = (block.notes || []).reduce((sum, note) => {
-    const lines = estimateLines(note, 96)
-    return sum + Math.max(mm(6.2), lines * mm(4.2))
-  }, 0)
+  const base = mm(11)
+  const rowsHeight = (block.notes || []).reduce((sum, note) => sum + estimateNoteRowHeight(note), 0)
   return base + rowsHeight + BLOCK_GAP
+}
+
+const estimatePaymentRowHeight = (row) => {
+  const text = `${row?.stage || ''} ${row?.percentage || ''}`.trim()
+  const lines = estimateLines(text, 80)
+  return Math.max(mm(7.2), lines * mm(4.4))
 }
 
 const estimatePaymentBlockHeight = (block) => {
-  const base = mm(14)
-  const rowsHeight = (block.rows || []).reduce((sum, row) => {
-    const text = `${row?.stage || ''} ${row?.percentage || ''}`.trim()
-    const lines = estimateLines(text, 92)
-    return sum + Math.max(mm(6.4), lines * mm(4.2))
-  }, 0)
+  const base = mm(15)
+  const rowsHeight = (block.rows || []).reduce((sum, row) => sum + estimatePaymentRowHeight(row), 0)
   return base + rowsHeight + BLOCK_GAP
 }
 
-const estimateTotalBlockHeight = () => mm(15) + BLOCK_GAP
+const estimateTotalBlockHeight = () => mm(16) + BLOCK_GAP
 
 const estimateBlockHeight = (block) => {
   if (block.type === 'scope') return estimateScopeBlockHeight(block)
@@ -115,35 +115,29 @@ const buildBlocks = (quotation = {}) => {
   })
 
   if ((quotation.materialSpec || []).length) {
-    chunk(quotation.materialSpec, 9).forEach((rows, index) => {
-      blocks.push({
-        type: 'material',
-        key: `material-${index}`,
-        rows,
-        continued: index > 0,
-      })
+    blocks.push({
+      type: 'material',
+      key: 'material',
+      rows: quotation.materialSpec,
+      continued: false,
     })
   }
 
   if ((quotation.notes || []).length) {
-    chunk(quotation.notes, 14).forEach((notes, index) => {
-      blocks.push({
-        type: 'notes',
-        key: `notes-${index}`,
-        notes,
-        continued: index > 0,
-      })
+    blocks.push({
+      type: 'notes',
+      key: 'notes',
+      notes: quotation.notes,
+      continued: false,
     })
   }
 
   if ((quotation.paymentSchedule || []).length) {
-    chunk(quotation.paymentSchedule, 10).forEach((rows, index) => {
-      blocks.push({
-        type: 'payment',
-        key: `payment-${index}`,
-        rows,
-        continued: index > 0,
-      })
+    blocks.push({
+      type: 'payment',
+      key: 'payment',
+      rows: quotation.paymentSchedule,
+      continued: false,
     })
   }
 
@@ -156,6 +150,58 @@ const buildBlocks = (quotation = {}) => {
   return blocks
 }
 
+const createSplitBlocks = (block, fitCount, partTag) => {
+  if (block.type === 'material') {
+    return {
+      fitted: {
+        ...block,
+        key: `${block.key}-part-${partTag}`,
+        rows: block.rows.slice(0, fitCount),
+      },
+      remaining: {
+        ...block,
+        key: `${block.key}-part-${partTag + 1}`,
+        rows: block.rows.slice(fitCount),
+        continued: true,
+      },
+    }
+  }
+
+  if (block.type === 'notes') {
+    return {
+      fitted: {
+        ...block,
+        key: `${block.key}-part-${partTag}`,
+        notes: block.notes.slice(0, fitCount),
+      },
+      remaining: {
+        ...block,
+        key: `${block.key}-part-${partTag + 1}`,
+        notes: block.notes.slice(fitCount),
+        continued: true,
+      },
+    }
+  }
+
+  if (block.type === 'payment') {
+    return {
+      fitted: {
+        ...block,
+        key: `${block.key}-part-${partTag}`,
+        rows: block.rows.slice(0, fitCount),
+      },
+      remaining: {
+        ...block,
+        key: `${block.key}-part-${partTag + 1}`,
+        rows: block.rows.slice(fitCount),
+        continued: true,
+      },
+    }
+  }
+
+  return { fitted: null, remaining: block }
+}
+
 const paginateBlocks = (blocks = []) => {
   const baseLimit = PAGE_HEIGHT - PAGE_PADDING_TOP - PAGE_PADDING_BOTTOM - PAGE_NUMBER_SPACE
   const firstPageLimit = baseLimit - FIRST_PAGE_RESERVED
@@ -165,24 +211,82 @@ const paginateBlocks = (blocks = []) => {
   let currentPage = []
   let currentHeight = 0
   let pageIndex = 0
+  let splitTag = 0
+  const pending = [...blocks]
 
-  blocks.forEach((block) => {
-    const blockHeight = estimateBlockHeight(block)
+  while (pending.length) {
+    const block = pending.shift()
     const limit = pageIndex === 0 ? firstPageLimit : regularPageLimit
+    const available = limit - currentHeight
+    const blockHeight = estimateBlockHeight(block)
 
-    if (currentPage.length > 0 && currentHeight + blockHeight > limit) {
-      pages.push(currentPage)
-      currentPage = [block]
-      currentHeight = blockHeight
-      pageIndex += 1
-    } else {
+    if (currentHeight + blockHeight <= limit) {
       currentPage.push(block)
       currentHeight += blockHeight
+      continue
     }
-  })
 
-  if (currentPage.length) pages.push(currentPage)
-  if (!pages.length) pages.push([])
+    const isSplitCandidate = block.type === 'material' || block.type === 'notes' || block.type === 'payment'
+
+    if (isSplitCandidate && available > mm(22)) {
+      const source = block.type === 'notes' ? block.notes : block.rows
+      const rowHeightGetter =
+        block.type === 'material'
+          ? estimateMaterialRowHeight
+          : block.type === 'notes'
+            ? estimateNoteRowHeight
+            : estimatePaymentRowHeight
+      const baseHeight =
+        block.type === 'material' ? mm(17) : block.type === 'notes' ? mm(11) : mm(15)
+
+      let used = baseHeight + BLOCK_GAP
+      let fitCount = 0
+      for (let i = 0; i < source.length; i += 1) {
+        const nextUsed = used + rowHeightGetter(source[i])
+        if (nextUsed > available) break
+        fitCount += 1
+        used = nextUsed
+      }
+
+      if (fitCount > 0 && fitCount < source.length) {
+        const splitResult = createSplitBlocks(block, fitCount, splitTag)
+        splitTag += 2
+        currentPage.push(splitResult.fitted)
+        currentHeight += estimateBlockHeight(splitResult.fitted)
+        pending.unshift(splitResult.remaining)
+      } else if (fitCount === source.length) {
+        currentPage.push(block)
+        currentHeight += blockHeight
+      } else {
+        pending.unshift(block)
+      }
+    } else {
+      pending.unshift(block)
+    }
+
+    if (currentPage.length > 0) {
+      pages.push(currentPage)
+      currentPage = []
+      currentHeight = 0
+      pageIndex += 1
+      continue
+    }
+
+    currentPage.push(pending.shift())
+    currentHeight = estimateBlockHeight(currentPage[0])
+    pages.push(currentPage)
+    currentPage = []
+    currentHeight = 0
+    pageIndex += 1
+  }
+
+  if (currentPage.length) {
+    pages.push(currentPage)
+  }
+
+  if (!pages.length) {
+    pages.push([])
+  }
 
   let guard = 0
   while (guard < 50) {
@@ -414,8 +518,8 @@ const styles = StyleSheet.create({
     paddingTop: PAGE_PADDING_TOP,
     paddingHorizontal: PAGE_PADDING_X,
     paddingBottom: PAGE_PADDING_BOTTOM,
-    fontSize: 11,
-    lineHeight: 1.35,
+    fontSize: 12,
+    lineHeight: 1.38,
     position: 'relative',
   },
   pageInner: {
@@ -424,7 +528,7 @@ const styles = StyleSheet.create({
 
   headerWrap: {
     marginTop: 0,
-    marginBottom: mm(4),
+    marginBottom: mm(5.6),
   },
   headerImage: {
     width: '100%',
@@ -433,21 +537,22 @@ const styles = StyleSheet.create({
   },
 
   clientSectionWrap: {
-    marginBottom: mm(4),
+    marginBottom: mm(5.2),
   },
   quotationTitle: {
-    fontSize: 15,
+    fontSize: 16.6,
     fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.red,
-    marginBottom: mm(3),
+    marginTop: mm(2.8),
+    marginBottom: mm(4),
   },
   clientMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: mm(2.4),
-    gap: mm(3),
+    marginBottom: mm(4.2),
+    gap: mm(4),
   },
   clientMetaColLeft: {
     width: '70%',
@@ -457,29 +562,29 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   metaLine: {
-    fontSize: 11.2,
-    lineHeight: 1.4,
-    marginBottom: 2,
+    fontSize: 12.2,
+    lineHeight: 1.46,
+    marginBottom: mm(1.2),
   },
   metaDate: {
-    fontSize: 12,
-    lineHeight: 1.4,
+    fontSize: 12.6,
+    lineHeight: 1.46,
   },
   metaLabel: {
     fontWeight: 'bold',
     letterSpacing: 0.6,
   },
   dearLine: {
-    fontSize: 11.4,
-    marginBottom: 2,
+    fontSize: 12.2,
+    marginBottom: mm(1),
   },
   introLine: {
-    fontSize: 10.8,
-    lineHeight: 1.45,
-    marginBottom: mm(2.2),
+    fontSize: 11.6,
+    lineHeight: 1.5,
+    marginBottom: mm(3.2),
   },
   scopeOfWorkHeading: {
-    fontSize: 11.8,
+    fontSize: 12.8,
     fontWeight: 'bold',
     textDecoration: 'underline',
   },
@@ -489,7 +594,7 @@ const styles = StyleSheet.create({
   },
   descriptionHeader: {
     backgroundColor: COLORS.red,
-    paddingVertical: mm(1.5),
+    paddingVertical: mm(1.8),
     paddingHorizontal: mm(3),
     borderWidth: 1,
     borderColor: COLORS.gray,
@@ -498,7 +603,7 @@ const styles = StyleSheet.create({
   descriptionHeaderText: {
     color: COLORS.white,
     fontWeight: 'bold',
-    fontSize: 11.2,
+    fontSize: 12,
     textTransform: 'uppercase',
   },
   scopeTable: {
@@ -509,18 +614,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.subTitleBg,
     borderTopWidth: 1,
     borderTopColor: COLORS.gray,
-    paddingVertical: mm(1.7),
+    paddingVertical: mm(2),
     paddingHorizontal: mm(3),
   },
   scopeSubTitleText: {
-    fontSize: 10.6,
+    fontSize: 11.4,
     fontWeight: 'bold',
   },
   scopeRow: {
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: COLORS.gray,
-    paddingVertical: mm(1.6),
+    paddingVertical: mm(1.9),
     paddingHorizontal: mm(2.6),
     alignItems: 'center',
   },
@@ -536,22 +641,22 @@ const styles = StyleSheet.create({
     marginRight: mm(2.4),
   },
   badgeText: {
-    fontSize: 8.5,
+    fontSize: 9.4,
     fontWeight: 'bold',
   },
   scopeTextWrap: {
     flex: 1,
   },
   scopeItemText: {
-    fontSize: 10.7,
-    lineHeight: 1.35,
+    fontSize: 11.5,
+    lineHeight: 1.38,
   },
 
   materialHeading: {
-    fontSize: 11.8,
+    fontSize: 12.8,
     fontWeight: 'bold',
     textDecoration: 'underline',
-    marginBottom: mm(1.7),
+    marginBottom: mm(2),
   },
   materialTable: {
     borderWidth: 1,
@@ -567,10 +672,10 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.gray,
   },
   materialCell: {
-    minHeight: mm(9),
+    minHeight: mm(10),
     justifyContent: 'center',
     paddingHorizontal: mm(2.2),
-    paddingVertical: mm(1.5),
+    paddingVertical: mm(1.8),
     borderRightWidth: 1,
     borderRightColor: COLORS.gray,
   },
@@ -589,51 +694,51 @@ const styles = StyleSheet.create({
   },
   materialHeaderText: {
     color: COLORS.white,
-    fontSize: 10.8,
+    fontSize: 11.6,
     fontWeight: 'bold',
   },
   materialCellText: {
-    fontSize: 9.6,
-    lineHeight: 1.35,
+    fontSize: 10.6,
+    lineHeight: 1.38,
   },
 
   notesHeading: {
-    fontSize: 11.8,
+    fontSize: 12.8,
     fontWeight: 'bold',
     textDecoration: 'underline',
-    marginBottom: mm(1.2),
+    marginBottom: mm(1.5),
   },
   noteRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: mm(1),
+    marginBottom: mm(1.2),
   },
   noteBullet: {
     width: mm(4),
-    fontSize: 8.8,
+    fontSize: 9.6,
     marginTop: 1,
   },
   noteText: {
     flex: 1,
-    fontSize: 9.4,
-    lineHeight: 1.35,
+    fontSize: 10.5,
+    lineHeight: 1.4,
   },
 
   paymentHeading: {
-    fontSize: 11.8,
+    fontSize: 12.8,
     fontWeight: 'bold',
     textDecoration: 'underline',
     color: COLORS.red,
-    marginBottom: mm(1.2),
+    marginBottom: mm(1.5),
   },
   paymentIntro: {
-    fontSize: 9.8,
-    marginBottom: mm(1.2),
+    fontSize: 10.8,
+    marginBottom: mm(1.4),
   },
   paymentItemText: {
-    fontSize: 9.8,
-    lineHeight: 1.35,
-    marginBottom: mm(1),
+    fontSize: 10.8,
+    lineHeight: 1.4,
+    marginBottom: mm(1.2),
   },
 
   totalBox: {
@@ -658,12 +763,12 @@ const styles = StyleSheet.create({
   },
   totalLeftText: {
     color: COLORS.white,
-    fontSize: 11.5,
+    fontSize: 12.2,
     fontWeight: 'bold',
   },
   totalRightText: {
     color: COLORS.black,
-    fontSize: 11.5,
+    fontSize: 12.2,
     fontWeight: 'bold',
   },
 
@@ -673,11 +778,11 @@ const styles = StyleSheet.create({
   },
   footerCenterLine: {
     textAlign: 'center',
-    fontSize: 9.7,
+    fontSize: 10.5,
     marginBottom: 2,
   },
   bestRegards: {
-    fontSize: 10,
+    fontSize: 10.8,
     marginTop: mm(1.4),
     marginBottom: mm(1.5),
   },
@@ -687,7 +792,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   footerBrand: {
-    fontSize: 10.8,
+    fontSize: 11.4,
     fontWeight: 'bold',
     letterSpacing: 0.8,
     width: '58%',
@@ -703,7 +808,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   signatureLabel: {
-    fontSize: 9.2,
+    fontSize: 10,
   },
   footerImage: {
     position: 'absolute',
@@ -720,7 +825,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
-    fontSize: 9.5,
+    fontSize: 10.2,
     color: COLORS.mutedText,
   },
 })

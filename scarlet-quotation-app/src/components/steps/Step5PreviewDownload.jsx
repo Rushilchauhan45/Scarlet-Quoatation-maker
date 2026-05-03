@@ -1,5 +1,4 @@
 import { Download, Save } from 'lucide-react'
-import QuotationPDF from '../pdf/QuotationPDF'
 import Button from '../ui/Button'
 import { generateQuotationPDF } from '../../utils/pdfGenerator'
 
@@ -25,12 +24,6 @@ export default function Step5PreviewDownload({ quotation, onSave, onNotify, setG
       </div>
 
       {generatingPdf ? <div className="rounded-xl bg-[#1A1A1A]/80 p-3 text-sm font-semibold text-white">Generating PDF...</div> : null}
-
-      <div className="rounded-2xl border border-[#E8E8E8] bg-[#FAFAFA] p-3">
-        <div>
-          <QuotationPDF quotation={quotation} />
-        </div>
-      </div>
     </div>
   )
 }
