@@ -118,7 +118,9 @@ const twoBhkStandardMaterialSpec = [
 export const twoBhkTurnkeyTemplates = {
   STANDARD: {
     introText:
-      'Standard 2 BHK turnkey quotation with practical finishes, complete room-wise furniture, and essential interior execution.',
+      `Respected Sir/Ma'am,
+
+We are pleased to present our standard 2 BHK interior quotation, designed to offer a perfect balance of functionality, aesthetics, and budget. This package includes practical finishes, essential furniture for all rooms, and basic interior enhancements to create a comfortable and well-organized living space. The design focuses on smart space utilization and modern appeal, ensuring a complete and efficient home interior solution.`,
     estimatedCost: '9,21,000',
     materialSpec: twoBhkStandardMaterialSpec,
     sections: [

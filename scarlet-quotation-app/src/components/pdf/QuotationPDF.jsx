@@ -240,9 +240,6 @@ const RenderIntro = ({ block }) => (
     <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 700, color: R.red, marginBottom: 8 }}>
       {block.title}
     </div>
-    <div style={{ fontSize: 12, lineHeight: '22px', color: R.black, marginBottom: 4 }}>
-      Dear Sir/Ma&apos;am,
-    </div>
     <div style={{ fontSize: 12, lineHeight: '22px', textIndent: '2em', color: R.black }}>
       {block.introText}
     </div>

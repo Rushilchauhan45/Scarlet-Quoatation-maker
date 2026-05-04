@@ -341,7 +341,9 @@ const fourBhkLuxuryMaterialSpec = [
 export const fourBhkTurnkeyTemplates = {
   STANDARD: {
     introText:
-      'Standard 4 BHK turnkey quotation with practical finishes, complete room-wise furniture, and essential interior execution.',
+      `Respected Sir/Ma'am,
+
+We are pleased to present our standard 4 BHK interior quotation, offering a comprehensive turnkey solution with practical finishes, complete room-wise furniture, and essential interior execution. This package is designed to enhance spacious living with a focus on functionality, refined aesthetics, and long-lasting quality. Our approach ensures a well-balanced design that meets both comfort and modern lifestyle requirements.`,
     estimatedCost: '24,99,000',
     materialSpec: fourBhkStandardMaterialSpec,
     sections: [
@@ -493,7 +495,11 @@ export const fourBhkTurnkeyTemplates = {
 
   PREMIUM: {
     introText:
-      'Premium 4 BHK turnkey quotation with upgraded finishes, richer details, and expanded room-wise functionality.',
+      `Respected Sir/Ma'am,
+
+We are pleased to present our Premium 4 BHK interior quotation, designed to offer an elevated living experience with a perfect blend of style, comfort, and functionality. This package includes thoughtfully designed room-wise furniture, upgraded finishes, elegant lighting solutions, and refined detailing across all spaces.
+
+Our approach focuses on enhancing spacious layouts with smart planning, premium materials, and modern aesthetics to create a well-balanced and sophisticated home. This package is ideal for clients looking for a noticeable upgrade in quality and design while maintaining practicality and comfort.`,
     estimatedCost: '31,99,000',
     materialSpec: fourBhkPremiumMaterialSpec,
     sections: [
@@ -647,7 +653,11 @@ export const fourBhkTurnkeyTemplates = {
 
   LUXURIOUS: {
     introText:
-      'Luxury 4 BHK turnkey quotation with premium execution, elevated detailing, and extensive decor scope.',
+      `Respected Sir/Ma'am,
+
+We are delighted to present our Luxury 4 BHK interior quotation, crafted to deliver a truly exclusive and high-end living environment. This package includes designer furniture, top-grade materials, customized design elements, statement lighting, and rich finishes that add elegance and grandeur to every space.
+
+Our design philosophy emphasizes attention to detail, personalized concepts, and superior craftsmanship to ensure a luxurious and timeless appeal. This package is perfect for those who desire a premium lifestyle with a refined, spacious, and uniquely designed home that reflects sophistication at every level.`,
     estimatedCost: '39,99,000',
     materialSpec: fourBhkLuxuryMaterialSpec,
     sections: [

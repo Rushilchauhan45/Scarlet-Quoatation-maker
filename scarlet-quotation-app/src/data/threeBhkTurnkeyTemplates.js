@@ -336,7 +336,9 @@ const threeBhkLuxuryMaterialSpec = [
 export const threeBhkTurnkeyTemplates = {
   STANDARD: {
     introText:
-      'Standard 3 BHK turnkey quotation with practical finishes, complete room-wise furniture, and essential interior execution.',
+      `Respected Sir/Ma'am,
+
+We are pleased to share our standard 3 BHK interior quotation, thoughtfully curated to deliver a combination of style, comfort, and practicality. This package covers complete room-wise furniture, durable finishes, and essential interior elements required for a modern lifestyle. The design approach ensures optimum space planning, elegant aesthetics, and a seamless living experience for your entire home.`,
     estimatedCost: '12,99,000',
     materialSpec: threeBhkStandardMaterialSpec,
     sections: [
@@ -461,7 +463,11 @@ export const threeBhkTurnkeyTemplates = {
 
   PREMIUM: {
     introText:
-      'Premium 3 BHK turnkey quotation with upgraded materials, richer details, and expanded storage and decor scope.',
+      `Respected Sir/Ma'am,
+
+We are pleased to present our Premium 3 BHK interior quotation, thoughtfully designed to elevate your living experience with enhanced aesthetics and superior finishes. This package includes well-crafted room-wise furniture, upgraded materials, elegant lighting concepts, and refined detailing to create a sophisticated yet comfortable home.
+
+Our design approach focuses on better space planning, improved functionality, and a modern premium look that reflects your lifestyle. With attention to quality and design balance, this package offers a perfect upgrade from standard interiors while maintaining practical usability.`,
     estimatedCost: '15,99,000',
     materialSpec: threeBhkPremiumMaterialSpec,
     sections: [
@@ -589,7 +595,11 @@ export const threeBhkTurnkeyTemplates = {
 
   LUXURIOUS: {
     introText:
-      'Luxury 3 BHK turnkey quotation with premium execution, elevated detailing, and expanded decor and styling features.',
+      `Respected Sir/Ma'am,
+
+We are delighted to present our Luxury 3 BHK interior quotation, curated to deliver an exclusive and high-end living experience. This package includes designer furniture, premium materials, customized elements, statement lighting, and detailed finishes that bring elegance and uniqueness to every space.
+
+Our approach emphasizes luxurious aesthetics, personalized design, and superior craftsmanship, ensuring every corner of your home reflects sophistication and comfort. This package is ideal for those who seek a refined, grand, and fully customized interior that stands out in both style and quality.`,
     estimatedCost: '23,99,000',
     materialSpec: threeBhkLuxuryMaterialSpec,
     sections: [

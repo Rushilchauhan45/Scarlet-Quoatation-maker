@@ -442,7 +442,6 @@ const ClientSection = ({ quotation = {} }) => (
       </View>
     </View>
 
-    <Text style={styles.dearLine}>Dear Sir/Ma'am,</Text>
     <Text style={styles.introLine}>
       {safeText(
         quotation?.introText,
