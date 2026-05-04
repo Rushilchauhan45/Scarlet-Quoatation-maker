@@ -37,6 +37,12 @@ export default function Step1ClientDetails({ quotation, update }) {
             </button>
           </label>
           <Input label="Quotation Date" type="date" value={quotation.date} onChange={(e) => update({ date: e.target.value })} />
+          <Input
+            label="Total Square Feet"
+            placeholder="e.g. 1250"
+            value={quotation.totalSquareFeet || ''}
+            onChange={(e) => update({ totalSquareFeet: e.target.value })}
+          />
         </div>
       </div>
 

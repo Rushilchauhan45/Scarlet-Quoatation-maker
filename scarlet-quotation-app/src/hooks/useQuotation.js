@@ -63,6 +63,7 @@ const defaultState = {
   gstNumber: '',
   showGstInPdf: true,
   date: todayISO,
+  totalSquareFeet: '',
   quotationNumber: '',
   bhkType: '',
   otherBhk: '',
@@ -137,6 +138,7 @@ export const useQuotation = (quotationNumberFactory) => {
     setQuotation({
       ...entryData,
       showGstInPdf: entryData.showGstInPdf ?? true,
+      totalSquareFeet: entryData.totalSquareFeet ?? '',
       packageType: normalizePackageForFlow(entryData.bhkType, entryData.packageType),
       sections: safeSections,
       marginAmount: entryData.marginAmount ?? entryData.marginPercent ?? '0',

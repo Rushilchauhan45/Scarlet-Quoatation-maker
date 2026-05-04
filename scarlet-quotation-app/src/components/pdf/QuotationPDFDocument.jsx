@@ -20,10 +20,11 @@ const PAGE_PADDING_X = mm(14)
 const PAGE_PADDING_TOP = mm(14)
 const PAGE_PADDING_BOTTOM = mm(18)
 const PAGE_NUMBER_SPACE = mm(8)
-const FIRST_PAGE_RESERVED = mm(128)
+const FIRST_PAGE_RESERVED_MIN = mm(136)
+const FIRST_PAGE_RESERVED_MAX = mm(178)
 const LAST_PAGE_FOOTER_RESERVED = mm(74)
 
-const BLOCK_GAP = mm(4.2)
+const BLOCK_GAP = mm(3.6)
 
 Font.registerHyphenationCallback((word) => [word])
 
@@ -36,6 +37,26 @@ const formatAmountForPdf = (value) => String(formatIndianCurrency(value)).replac
 
 const estimateLines = (value, charsPerLine) =>
   Math.max(1, Math.ceil(String(value ?? '').trim().length / charsPerLine))
+
+const estimateFirstPageReserved = (quotation = {}) => {
+  const hasGst = Boolean(quotation?.showGstInPdf && String(quotation?.gstNumber || '').trim())
+  const hasSquareFeet = Boolean(String(quotation?.totalSquareFeet ?? '').trim())
+
+  const leftMetaRows = 3 + (hasGst ? 1 : 0)
+  const rightMetaRows = 1 + (hasSquareFeet ? 1 : 0)
+  const metaRows = Math.max(leftMetaRows, rightMetaRows)
+  const introLines = estimateLines(quotation?.introText, 102)
+
+  const estimated =
+    mm(60) + // header image + its bottom gap
+    mm(28) + // title area + spacing below title
+    metaRows * mm(5.9) +
+    mm(8.4) + // spacing below metadata
+    Math.max(mm(8.8), introLines * mm(4.9)) +
+    mm(15) // space after intro + "SCOPE OF WORK"
+
+  return Math.min(Math.max(estimated, FIRST_PAGE_RESERVED_MIN), FIRST_PAGE_RESERVED_MAX)
+}
 
 const estimateScopeBlockHeight = (block) => {
   const base = mm(17)
@@ -202,9 +223,9 @@ const createSplitBlocks = (block, fitCount, partTag) => {
   return { fitted: null, remaining: block }
 }
 
-const paginateBlocks = (blocks = []) => {
+const paginateBlocks = (blocks = [], quotation = {}) => {
   const baseLimit = PAGE_HEIGHT - PAGE_PADDING_TOP - PAGE_PADDING_BOTTOM - PAGE_NUMBER_SPACE
-  const firstPageLimit = baseLimit - FIRST_PAGE_RESERVED
+  const firstPageLimit = baseLimit - estimateFirstPageReserved(quotation)
   const regularPageLimit = baseLimit
 
   const pages = []
@@ -226,18 +247,15 @@ const paginateBlocks = (blocks = []) => {
       continue
     }
 
-    const isSplitCandidate = block.type === 'material' || block.type === 'notes' || block.type === 'payment'
+    const isSplitCandidate = block.type === 'material' || block.type === 'notes'
 
-    if (isSplitCandidate && available > mm(22)) {
+    if (isSplitCandidate && available > mm(14)) {
       const source = block.type === 'notes' ? block.notes : block.rows
       const rowHeightGetter =
         block.type === 'material'
           ? estimateMaterialRowHeight
-          : block.type === 'notes'
-            ? estimateNoteRowHeight
-            : estimatePaymentRowHeight
-      const baseHeight =
-        block.type === 'material' ? mm(17) : block.type === 'notes' ? mm(11) : mm(15)
+          : estimateNoteRowHeight
+      const baseHeight = block.type === 'material' ? mm(17) : mm(11)
 
       let used = baseHeight + BLOCK_GAP
       let fitCount = 0
@@ -438,6 +456,11 @@ const ClientSection = ({ quotation = {} }) => (
         ) : null}
       </View>
       <View style={styles.clientMetaColRight}>
+        {String(quotation?.totalSquareFeet ?? '').trim() ? (
+          <View style={styles.metaSquareFeetBox}>
+            <Text style={styles.metaSquareFeetText}>Total Sqft : {safeText(quotation?.totalSquareFeet)}</Text>
+          </View>
+        ) : null}
         <Text style={styles.metaDate}><Text style={styles.metaLabel}>DATE :</Text> {safeText(formatDateDDMMYYYY(quotation?.date))}</Text>
       </View>
     </View>
@@ -479,7 +502,7 @@ const renderBlock = (block) => {
 
 export const QuotationPDFDocument = ({ quotation = {}, headerImageBase64 = null, footerImageBase64 = null }) => {
   const blocks = buildBlocks(quotation)
-  const pages = paginateBlocks(blocks)
+  const pages = paginateBlocks(blocks, quotation)
 
   return (
     <Document>
@@ -527,7 +550,7 @@ const styles = StyleSheet.create({
 
   headerWrap: {
     marginTop: 0,
-    marginBottom: mm(5.6),
+    marginBottom: mm(6.8),
   },
   headerImage: {
     width: '100%',
@@ -536,21 +559,21 @@ const styles = StyleSheet.create({
   },
 
   clientSectionWrap: {
-    marginBottom: mm(5.2),
+    marginBottom: mm(7.4),
   },
   quotationTitle: {
     fontSize: 16.6,
     fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.red,
-    marginTop: mm(2.8),
-    marginBottom: mm(4),
+    marginTop: mm(3.2),
+    marginBottom: mm(8.5),
   },
   clientMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: mm(4.2),
+    marginBottom: mm(7.6),
     gap: mm(4),
   },
   clientMetaColLeft: {
@@ -569,6 +592,19 @@ const styles = StyleSheet.create({
     fontSize: 12.6,
     lineHeight: 1.46,
   },
+  metaSquareFeetBox: {
+    backgroundColor: COLORS.red,
+    borderRadius: mm(2.2),
+    paddingVertical: mm(1.5),
+    paddingHorizontal: mm(2.6),
+    marginBottom: mm(2.2),
+  },
+  metaSquareFeetText: {
+    fontSize: 11.8,
+    lineHeight: 1.35,
+    color: COLORS.white,
+    fontWeight: 'bold',
+  },
   metaLabel: {
     fontWeight: 'bold',
     letterSpacing: 0.6,
@@ -580,12 +616,13 @@ const styles = StyleSheet.create({
   introLine: {
     fontSize: 11.6,
     lineHeight: 1.5,
-    marginBottom: mm(3.2),
+    marginBottom: mm(7.4),
   },
   scopeOfWorkHeading: {
     fontSize: 12.8,
     fontWeight: 'bold',
     textDecoration: 'underline',
+    marginBottom: mm(3.6),
   },
 
   block: {
