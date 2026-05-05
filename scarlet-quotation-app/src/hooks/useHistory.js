@@ -21,7 +21,8 @@ export const useHistory = () => {
   }
 
   const saveQuotation = (quotation) => {
-    const id = crypto.randomUUID()
+    const existingId = quotation?.historyId
+    const id = existingId || crypto.randomUUID()
     const entry = {
       id,
       clientName: quotation.clientName,
@@ -29,10 +30,13 @@ export const useHistory = () => {
       package: quotation.packageType,
       date: quotation.date,
       quotationType: quotation.quotationType,
-      data: quotation,
+      data: { ...quotation, historyId: id },
     }
 
-    const next = [...history, entry]
+    const hasMatch = Boolean(existingId && history.some((item) => item.id === existingId))
+    const next = hasMatch
+      ? history.map((item) => (item.id === existingId ? entry : item))
+      : [...history, entry]
     persist(next)
     return entry
   }

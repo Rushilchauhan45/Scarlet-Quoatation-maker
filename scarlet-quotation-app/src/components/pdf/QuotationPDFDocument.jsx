@@ -28,12 +28,16 @@ const BLOCK_GAP = mm(3.6)
 
 Font.registerHyphenationCallback((word) => [word])
 
+const normalizePdfText = (value) => String(value ?? '').replace(/₹/g, 'Rs.')
+
 const safeText = (value, fallback = '-') => {
   const text = String(value ?? '').trim()
-  return text || fallback
+  const output = text || String(fallback ?? '').trim()
+  return normalizePdfText(output || '-')
 }
 
-const formatAmountForPdf = (value) => String(formatIndianCurrency(value)).replace(/^₹/, '')
+const formatAmountForPdf = (value) =>
+  String(formatIndianCurrency(value)).replace(/^₹/, '').replace(/\/-\s*$/, '').trim()
 
 const estimateLines = (value, charsPerLine) =>
   Math.max(1, Math.ceil(String(value ?? '').trim().length / charsPerLine))
@@ -49,21 +53,21 @@ const estimateFirstPageReserved = (quotation = {}) => {
 
   const estimated =
     mm(60) + // header image + its bottom gap
-    mm(28) + // title area + spacing below title
-    metaRows * mm(5.9) +
-    mm(8.4) + // spacing below metadata
-    Math.max(mm(8.8), introLines * mm(4.9)) +
-    mm(15) // space after intro + "SCOPE OF WORK"
+    mm(30) + // title area + spacing below title
+    metaRows * mm(6.5) +
+    mm(9.2) + // spacing below metadata
+    Math.max(mm(9.6), introLines * mm(5.4)) +
+    mm(16.5) // space after intro + "SCOPE OF WORK"
 
   return Math.min(Math.max(estimated, FIRST_PAGE_RESERVED_MIN), FIRST_PAGE_RESERVED_MAX)
 }
 
 const estimateScopeBlockHeight = (block) => {
-  const base = mm(17)
+  const base = mm(18.5)
   const rowsHeight = (block.items || []).reduce((sum, item) => {
-    if (item?.isSubTitle) return sum + mm(8.8)
+    if (item?.isSubTitle) return sum + mm(9.8)
     const textLines = estimateLines(item?.text, 72)
-    const rowHeight = Math.max(mm(9.4), textLines * mm(5) + mm(3.2))
+    const rowHeight = Math.max(mm(10.4), textLines * mm(5.4) + mm(3.4))
     return sum + rowHeight
   }, 0)
   return base + rowsHeight + BLOCK_GAP
@@ -75,22 +79,22 @@ const estimateMaterialRowHeight = (row) => {
     estimateLines(row?.specification, 26),
     estimateLines(row?.clarity, 26),
   )
-  return Math.max(mm(10), lines * mm(4.9) + mm(3.2))
+  return Math.max(mm(11), lines * mm(5.4) + mm(3.4))
 }
 
 const estimateMaterialBlockHeight = (block) => {
-  const base = mm(17)
+  const base = mm(18.5)
   const rowsHeight = (block.rows || []).reduce((sum, row) => sum + estimateMaterialRowHeight(row), 0)
   return base + rowsHeight + BLOCK_GAP
 }
 
 const estimateNoteRowHeight = (note) => {
   const lines = estimateLines(note, 84)
-  return Math.max(mm(7), lines * mm(4.4))
+  return Math.max(mm(7.8), lines * mm(4.8))
 }
 
 const estimateNotesBlockHeight = (block) => {
-  const base = mm(11)
+  const base = mm(12)
   const rowsHeight = (block.notes || []).reduce((sum, note) => sum + estimateNoteRowHeight(note), 0)
   return base + rowsHeight + BLOCK_GAP
 }
@@ -98,16 +102,16 @@ const estimateNotesBlockHeight = (block) => {
 const estimatePaymentRowHeight = (row) => {
   const text = `${row?.stage || ''} ${row?.percentage || ''}`.trim()
   const lines = estimateLines(text, 80)
-  return Math.max(mm(7.2), lines * mm(4.4))
+  return Math.max(mm(8), lines * mm(4.8))
 }
 
 const estimatePaymentBlockHeight = (block) => {
-  const base = mm(15)
+  const base = mm(16.2)
   const rowsHeight = (block.rows || []).reduce((sum, row) => sum + estimatePaymentRowHeight(row), 0)
   return base + rowsHeight + BLOCK_GAP
 }
 
-const estimateTotalBlockHeight = () => mm(16) + BLOCK_GAP
+const estimateTotalBlockHeight = () => mm(18) + BLOCK_GAP
 
 const estimateBlockHeight = (block) => {
   if (block.type === 'scope') return estimateScopeBlockHeight(block)
@@ -237,6 +241,14 @@ const paginateBlocks = (blocks = [], quotation = {}) => {
 
   while (pending.length) {
     const block = pending.shift()
+
+    if (block?.type === 'material' && currentPage.length > 0) {
+      pages.push(currentPage)
+      currentPage = []
+      currentHeight = 0
+      pageIndex += 1
+    }
+
     const limit = pageIndex === 0 ? firstPageLimit : regularPageLimit
     const available = limit - currentHeight
     const blockHeight = estimateBlockHeight(block)
@@ -452,16 +464,18 @@ const ClientSection = ({ quotation = {} }) => (
         <Text style={styles.metaLine}><Text style={styles.metaLabel}>Address:</Text> {safeText(quotation?.address)}</Text>
         <Text style={styles.metaLine}><Text style={styles.metaLabel}>Contact :</Text> {safeText(quotation?.contactNumber)}</Text>
         {quotation?.showGstInPdf && String(quotation?.gstNumber || '').trim() ? (
-          <Text style={styles.metaLine}><Text style={styles.metaLabel}>GST NO. -</Text> {safeText(quotation?.gstNumber)}</Text>
+          <Text style={styles.metaLine}><Text style={styles.metaLabel}>GST NO. :</Text> {safeText(quotation?.gstNumber)}</Text>
         ) : null}
       </View>
       <View style={styles.clientMetaColRight}>
+        <Text style={styles.metaDate}><Text style={styles.metaLabel}>DATE :</Text> {safeText(formatDateDDMMYYYY(quotation?.date))}</Text>
         {String(quotation?.totalSquareFeet ?? '').trim() ? (
           <View style={styles.metaSquareFeetBox}>
-            <Text style={styles.metaSquareFeetText}>Total Sqft : {safeText(quotation?.totalSquareFeet)}</Text>
+            <Text style={styles.metaSquareFeetText} wrap={false}>
+              Total Project Area : {safeText(quotation?.totalSquareFeet)} sqft
+            </Text>
           </View>
         ) : null}
-        <Text style={styles.metaDate}><Text style={styles.metaLabel}>DATE :</Text> {safeText(formatDateDDMMYYYY(quotation?.date))}</Text>
       </View>
     </View>
 
@@ -540,8 +554,8 @@ const styles = StyleSheet.create({
     paddingTop: PAGE_PADDING_TOP,
     paddingHorizontal: PAGE_PADDING_X,
     paddingBottom: PAGE_PADDING_BOTTOM,
-    fontSize: 12,
-    lineHeight: 1.38,
+    fontSize: 13,
+    lineHeight: 1.4,
     position: 'relative',
   },
   pageInner: {
@@ -562,7 +576,7 @@ const styles = StyleSheet.create({
     marginBottom: mm(7.4),
   },
   quotationTitle: {
-    fontSize: 16.6,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
     color: COLORS.red,
@@ -577,19 +591,19 @@ const styles = StyleSheet.create({
     gap: mm(4),
   },
   clientMetaColLeft: {
-    width: '70%',
+    width: '62%',
   },
   clientMetaColRight: {
-    width: '30%',
+    width: '38%',
     alignItems: 'flex-end',
   },
   metaLine: {
-    fontSize: 12.2,
+    fontSize: 13.2,
     lineHeight: 1.46,
     marginBottom: mm(1.2),
   },
   metaDate: {
-    fontSize: 12.6,
+    fontSize: 13.6,
     lineHeight: 1.46,
   },
   metaSquareFeetBox: {
@@ -597,10 +611,10 @@ const styles = StyleSheet.create({
     borderRadius: mm(2.2),
     paddingVertical: mm(1.5),
     paddingHorizontal: mm(2.6),
-    marginBottom: mm(2.2),
+    marginTop: mm(2.2),
   },
   metaSquareFeetText: {
-    fontSize: 11.8,
+    fontSize: 12.8,
     lineHeight: 1.35,
     color: COLORS.white,
     fontWeight: 'bold',
@@ -614,12 +628,12 @@ const styles = StyleSheet.create({
     marginBottom: mm(1),
   },
   introLine: {
-    fontSize: 11.6,
+    fontSize: 12.6,
     lineHeight: 1.5,
     marginBottom: mm(7.4),
   },
   scopeOfWorkHeading: {
-    fontSize: 12.8,
+    fontSize: 13.8,
     fontWeight: 'bold',
     textDecoration: 'underline',
     marginBottom: mm(3.6),
@@ -639,7 +653,7 @@ const styles = StyleSheet.create({
   descriptionHeaderText: {
     color: COLORS.white,
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 13,
     textTransform: 'uppercase',
   },
   scopeTable: {
@@ -654,7 +668,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: mm(3),
   },
   scopeSubTitleText: {
-    fontSize: 11.4,
+    fontSize: 12.4,
     fontWeight: 'bold',
   },
   scopeRow: {
@@ -677,19 +691,19 @@ const styles = StyleSheet.create({
     marginRight: mm(2.4),
   },
   badgeText: {
-    fontSize: 9.4,
+    fontSize: 10.4,
     fontWeight: 'bold',
   },
   scopeTextWrap: {
     flex: 1,
   },
   scopeItemText: {
-    fontSize: 11.5,
+    fontSize: 12.5,
     lineHeight: 1.38,
   },
 
   materialHeading: {
-    fontSize: 12.8,
+    fontSize: 13.8,
     fontWeight: 'bold',
     textDecoration: 'underline',
     marginBottom: mm(2),
@@ -730,16 +744,16 @@ const styles = StyleSheet.create({
   },
   materialHeaderText: {
     color: COLORS.white,
-    fontSize: 11.6,
+    fontSize: 12.6,
     fontWeight: 'bold',
   },
   materialCellText: {
-    fontSize: 10.6,
+    fontSize: 11.6,
     lineHeight: 1.38,
   },
 
   notesHeading: {
-    fontSize: 12.8,
+    fontSize: 13.8,
     fontWeight: 'bold',
     textDecoration: 'underline',
     marginBottom: mm(1.5),
@@ -751,28 +765,28 @@ const styles = StyleSheet.create({
   },
   noteBullet: {
     width: mm(4),
-    fontSize: 9.6,
+    fontSize: 10.6,
     marginTop: 1,
   },
   noteText: {
     flex: 1,
-    fontSize: 10.5,
+    fontSize: 11.5,
     lineHeight: 1.4,
   },
 
   paymentHeading: {
-    fontSize: 12.8,
+    fontSize: 13.8,
     fontWeight: 'bold',
     textDecoration: 'underline',
     color: COLORS.red,
     marginBottom: mm(1.5),
   },
   paymentIntro: {
-    fontSize: 10.8,
+    fontSize: 11.8,
     marginBottom: mm(1.4),
   },
   paymentItemText: {
-    fontSize: 10.8,
+    fontSize: 11.8,
     lineHeight: 1.4,
     marginBottom: mm(1.2),
   },
@@ -799,12 +813,12 @@ const styles = StyleSheet.create({
   },
   totalLeftText: {
     color: COLORS.white,
-    fontSize: 12.2,
+    fontSize: 13.2,
     fontWeight: 'bold',
   },
   totalRightText: {
     color: COLORS.black,
-    fontSize: 12.2,
+    fontSize: 13.2,
     fontWeight: 'bold',
   },
 
@@ -814,11 +828,11 @@ const styles = StyleSheet.create({
   },
   footerCenterLine: {
     textAlign: 'center',
-    fontSize: 10.5,
+    fontSize: 11.5,
     marginBottom: 2,
   },
   bestRegards: {
-    fontSize: 10.8,
+    fontSize: 11.8,
     marginTop: mm(1.4),
     marginBottom: mm(1.5),
   },
@@ -828,7 +842,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   footerBrand: {
-    fontSize: 11.4,
+    fontSize: 12.4,
     fontWeight: 'bold',
     letterSpacing: 0.8,
     width: '58%',
@@ -844,7 +858,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   signatureLabel: {
-    fontSize: 10,
+    fontSize: 11,
   },
   footerImage: {
     position: 'absolute',
@@ -861,7 +875,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
-    fontSize: 10.2,
+    fontSize: 11.2,
     color: COLORS.mutedText,
   },
 })

@@ -20,7 +20,10 @@ function AppShell() {
   }
 
   const handleSave = () => {
-    saveQuotation(quotation)
+    const entry = saveQuotation(quotation)
+    if (entry?.id && quotation.historyId !== entry.id) {
+      update({ historyId: entry.id })
+    }
     notify('Quotation saved!')
   }
 
@@ -30,7 +33,7 @@ function AppShell() {
         history={history}
         onNew={resetQuotation}
         onLoad={(entry) => {
-          loadFromHistory(entry.data)
+          loadFromHistory({ ...entry.data, historyId: entry.id })
           setMobileOpen(false)
         }}
         onDelete={deleteQuotation}

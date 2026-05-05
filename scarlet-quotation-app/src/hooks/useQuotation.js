@@ -65,6 +65,8 @@ const defaultState = {
   date: todayISO,
   totalSquareFeet: '',
   quotationNumber: '',
+  historyId: null,
+  skipTemplateAutoApply: false,
   bhkType: '',
   otherBhk: '',
   quotationType: '',
@@ -95,6 +97,14 @@ export const useQuotation = (quotationNumberFactory) => {
         Object.prototype.hasOwnProperty.call(patch, 'packageType')
       ) {
         next.packageType = normalizePackageForFlow(next.bhkType, next.packageType)
+        next.skipTemplateAutoApply = false
+      }
+
+      if (
+        Object.prototype.hasOwnProperty.call(patch, 'quotationType') ||
+        Object.prototype.hasOwnProperty.call(patch, 'buildMode')
+      ) {
+        next.skipTemplateAutoApply = false
       }
       return next
     })
@@ -139,6 +149,8 @@ export const useQuotation = (quotationNumberFactory) => {
       ...entryData,
       showGstInPdf: entryData.showGstInPdf ?? true,
       totalSquareFeet: entryData.totalSquareFeet ?? '',
+      historyId: entryData.historyId ?? entryData.id ?? null,
+      skipTemplateAutoApply: true,
       packageType: normalizePackageForFlow(entryData.bhkType, entryData.packageType),
       sections: safeSections,
       marginAmount: entryData.marginAmount ?? entryData.marginPercent ?? '0',

@@ -13,10 +13,17 @@ export default function Step4BuildQuotation({ quotation, update, applyTemplateSe
   }
 
   useEffect(() => {
-    if (quotation.buildMode === 'template') {
+    if (quotation.buildMode === 'template' && !quotation.skipTemplateAutoApply) {
       applyTemplateSelection()
     }
-  }, [applyTemplateSelection, quotation.buildMode, quotation.bhkType, quotation.packageType, quotation.quotationType])
+  }, [
+    applyTemplateSelection,
+    quotation.buildMode,
+    quotation.bhkType,
+    quotation.packageType,
+    quotation.quotationType,
+    quotation.skipTemplateAutoApply,
+  ])
 
   return (
     <div className="space-y-6">
