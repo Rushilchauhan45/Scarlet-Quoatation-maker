@@ -665,9 +665,8 @@ Our approach focuses on enhancing spacious layouts with smart planning, premium 
     introText:
       `Respected Sir/Ma'am,
 
-We are delighted to present our Luxury 4 BHK interior quotation, crafted to deliver a truly exclusive and high-end living environment. This package includes designer furniture, top-grade materials, customized design elements, statement lighting, and rich finishes that add elegance and grandeur to every space.
-
-Our design philosophy emphasizes attention to detail, personalized concepts, and superior craftsmanship to ensure a luxurious and timeless appeal. This package is perfect for those who desire a premium lifestyle with a refined, spacious, and uniquely designed home that reflects sophistication at every level.`,
+⇒ We are delighted to present our Luxury 4 BHK interior quotation, crafted to deliver a truly exclusive and high-end living environment. This package includes designer furniture, top-grade materials, customized design elements, statement lighting, and rich finishes that add elegance and grandeur to every space.
+⇒ Our design philosophy emphasizes attention to detail, personalized concepts, and superior craftsmanship to ensure a luxurious and timeless appeal. This package is perfect for those who desire a premium lifestyle with a refined, spacious, and uniquely designed home that reflects sophistication at every level.`,
     estimatedCost: '39,99,000',
     materialSpec: fourBhkLuxuryMaterialSpec,
     sections: [

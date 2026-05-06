@@ -1,4 +1,4 @@
-import { Document, Font, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Circle, Document, Font, Image, Link, Page, Path, StyleSheet, Svg, Text, View } from '@react-pdf/renderer'
 import { formatDateDDMMYYYY, formatIndianCurrency } from '../../utils/formatCurrency'
 
 const mm = (value) => value * 2.835
@@ -22,7 +22,7 @@ const PAGE_PADDING_BOTTOM = mm(18)
 const PAGE_NUMBER_SPACE = mm(8)
 const FIRST_PAGE_RESERVED_MIN = mm(136)
 const FIRST_PAGE_RESERVED_MAX = mm(178)
-const LAST_PAGE_FOOTER_RESERVED = mm(74)
+const LAST_PAGE_FOOTER_RESERVED = mm(104)
 
 const BLOCK_GAP = mm(3.6)
 
@@ -34,6 +34,14 @@ const safeText = (value, fallback = '-') => {
   const text = String(value ?? '').trim()
   const output = text || String(fallback ?? '').trim()
   return normalizePdfText(output || '-')
+}
+
+const formatIntroForPdf = (quotation = {}) => {
+  const intro = String(quotation?.introText ?? '')
+  const isLuxury4Bhk = String(quotation?.bhkType || '').trim().toUpperCase() === '4BHK'
+    && String(quotation?.packageType || '').trim().toUpperCase() === 'LUXURIOUS'
+  const normalized = isLuxury4Bhk ? intro.replace(/\n\s*\n/g, '\n') : intro
+  return safeText(normalized)
 }
 
 const formatAmountForPdf = (value) =>
@@ -66,7 +74,7 @@ const estimateScopeBlockHeight = (block) => {
   const base = mm(18.5)
   const rowsHeight = (block.items || []).reduce((sum, item) => {
     if (item?.isSubTitle) return sum + mm(9.8)
-    const textLines = estimateLines(item?.text, 72)
+    const textLines = estimateLines(item?.text, 88)
     const rowHeight = Math.max(mm(10.4), textLines * mm(5.4) + mm(3.4))
     return sum + rowHeight
   }, 0)
@@ -227,10 +235,20 @@ const createSplitBlocks = (block, fitCount, partTag) => {
   return { fitted: null, remaining: block }
 }
 
-const paginateBlocks = (blocks = [], quotation = {}) => {
+const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0) => {
   const baseLimit = PAGE_HEIGHT - PAGE_PADDING_TOP - PAGE_PADDING_BOTTOM - PAGE_NUMBER_SPACE
-  const firstPageLimit = baseLimit - estimateFirstPageReserved(quotation)
+  let firstPageLimit = baseLimit - estimateFirstPageReserved(quotation) + mm(6)
+  if (pinnedHeight) firstPageLimit -= pinnedHeight + mm(3)
+  if (firstPageLimit < mm(30)) firstPageLimit = mm(30)
+  if (firstPageLimit > baseLimit) firstPageLimit = baseLimit
   const regularPageLimit = baseLimit
+
+  const firstBlock = blocks[0]
+  if (firstBlock?.type === 'scope') {
+    const firstBlockHeight = estimateBlockHeight(firstBlock)
+    const minFirstPage = Math.min(baseLimit, firstBlockHeight + mm(6))
+    if (firstPageLimit < minFirstPage) firstPageLimit = minFirstPage
+  }
 
   const pages = []
   let currentPage = []
@@ -242,18 +260,17 @@ const paginateBlocks = (blocks = [], quotation = {}) => {
   while (pending.length) {
     const block = pending.shift()
 
-    if (block?.type === 'material' && currentPage.length > 0) {
-      pages.push(currentPage)
-      currentPage = []
-      currentHeight = 0
-      pageIndex += 1
-    }
-
     const limit = pageIndex === 0 ? firstPageLimit : regularPageLimit
     const available = limit - currentHeight
     const blockHeight = estimateBlockHeight(block)
 
     if (currentHeight + blockHeight <= limit) {
+      currentPage.push(block)
+      currentHeight += blockHeight
+      continue
+    }
+
+    if (pageIndex === 0 && currentPage.length === 0 && block.type === 'scope') {
       currentPage.push(block)
       currentHeight += blockHeight
       continue
@@ -318,6 +335,11 @@ const paginateBlocks = (blocks = [], quotation = {}) => {
     pages.push([])
   }
 
+  if (pages[0].length === 0 && pages.length > 1 && pages[1].length > 0) {
+    const moved = pages[1].shift()
+    if (moved) pages[0].push(moved)
+  }
+
   let guard = 0
   while (guard < 50) {
     guard += 1
@@ -373,9 +395,7 @@ const ScopeBlock = ({ block }) => (
 
 const MaterialBlock = ({ block }) => (
   <View style={styles.block} wrap={false}>
-    <Text style={styles.materialHeading}>
-      MATERIAL SPECIFICATION{block?.continued ? ' (CONT.)' : ''}
-    </Text>
+    {!block?.continued ? <Text style={styles.materialHeading}>MATERIAL SPECIFICATION</Text> : null}
     <View style={styles.materialTable}>
       <View style={styles.materialHeaderRow}>
         <View style={[styles.materialCell, styles.materialCol1, styles.materialHeaderCell]}>
@@ -411,7 +431,7 @@ const MaterialBlock = ({ block }) => (
 
 const NotesBlock = ({ block }) => (
   <View style={styles.block} wrap={false}>
-    <Text style={styles.notesHeading}>Notes:{block?.continued ? ' (CONT.)' : ''}</Text>
+    <Text style={styles.notesHeading}>Notes:</Text>
     {(block?.notes || []).map((note, index) => (
       <View key={`note-${index}`} style={styles.noteRow}>
         <Text style={styles.noteBullet}>•</Text>
@@ -423,7 +443,7 @@ const NotesBlock = ({ block }) => (
 
 const PaymentBlock = ({ block }) => (
   <View style={styles.block} wrap={false}>
-    <Text style={styles.paymentHeading}>PAYMENT SCHEDULE:{block?.continued ? ' (CONT.)' : ''}</Text>
+    <Text style={styles.paymentHeading}>PAYMENT SCHEDULE:</Text>
     <Text style={styles.paymentIntro}>Payment should be done in stage wise as follows:</Text>
     {(block?.rows || []).map((row, index) => (
       <Text key={row?.id || `payment-${index}`} style={styles.paymentItemText}>
@@ -480,13 +500,49 @@ const ClientSection = ({ quotation = {} }) => (
     </View>
 
     <Text style={styles.introLine}>
-      {safeText(
-        quotation?.introText,
-        'Thank you for your inquiry. We are pleased to share our quotation for your interior requirements.',
-      )}
+      {formatIntroForPdf({
+        ...quotation,
+        introText:
+          quotation?.introText ||
+          'Thank you for your inquiry. We are pleased to share our quotation for your interior requirements.',
+      })}
     </Text>
     <Text style={styles.scopeOfWorkHeading}>SCOPE OF WORK</Text>
   </View>
+)
+
+const IconGlobe = () => (
+  <Svg viewBox="0 0 24 24" style={styles.iconSvg}>
+    <Circle cx="12" cy="12" r="9" stroke={COLORS.white} strokeWidth="2" />
+    <Path d="M3 12h18" stroke={COLORS.white} strokeWidth="2" strokeLinecap="round" />
+    <Path d="M12 3v18" stroke={COLORS.white} strokeWidth="2" strokeLinecap="round" />
+  </Svg>
+)
+
+const IconInstagram = () => (
+  <Svg viewBox="0 0 24 24" style={styles.iconSvg}>
+    <Path
+      d="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z"
+      stroke={COLORS.white}
+      strokeWidth="2"
+      fill="none"
+    />
+    <Circle cx="12" cy="12" r="3.5" stroke={COLORS.white} strokeWidth="2" fill="none" />
+    <Circle cx="17" cy="7" r="1" fill={COLORS.white} />
+  </Svg>
+)
+
+const IconLocation = () => (
+  <Svg viewBox="0 0 24 24" style={styles.iconSvg}>
+    <Path
+      d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"
+      stroke={COLORS.white}
+      strokeWidth="2"
+      fill="none"
+      strokeLinejoin="round"
+    />
+    <Circle cx="12" cy="10" r="2.5" stroke={COLORS.white} strokeWidth="2" fill="none" />
+  </Svg>
 )
 
 const LastPageFooter = () => (
@@ -500,6 +556,28 @@ const LastPageFooter = () => (
       <View style={styles.clientSignatureWrap}>
         <View style={styles.signatureLine} />
         <Text style={styles.signatureLabel}>Client Signature</Text>
+      </View>
+    </View>
+
+    <View style={styles.linkSection}>
+      <Text style={styles.linkTitle}>Meanwhile, you can explore our work here:</Text>
+      <View style={styles.linkRow}>
+        <Link src="https://scarletinteriordesign.com/">
+          <View style={styles.linkIcon}><IconGlobe /></View>
+        </Link>
+        <Text style={styles.linkText}>www.scarletinteriordesign.com</Text>
+      </View>
+      <View style={styles.linkRow}>
+        <Link src="https://www.instagram.com/scarletinteriordesigns?igsh=MjM2b3djN3hyZTNq">
+          <View style={styles.linkIcon}><IconInstagram /></View>
+        </Link>
+        <Text style={styles.linkText}>@scarletinteriordesigns</Text>
+      </View>
+      <View style={styles.linkRow}>
+        <Link src="https://share.google/5p1cPPZQ7WwhlyzWE">
+          <View style={styles.linkIcon}><IconLocation /></View>
+        </Link>
+        <Text style={styles.linkText}>915, Satyamev Eminence, Science City Road, Sola, Ahmedabad</Text>
       </View>
     </View>
   </View>
@@ -516,7 +594,24 @@ const renderBlock = (block) => {
 
 export const QuotationPDFDocument = ({ quotation = {}, headerImageBase64 = null, footerImageBase64 = null }) => {
   const blocks = buildBlocks(quotation)
-  const pages = paginateBlocks(blocks, quotation)
+  const isLuxury4Bhk = String(quotation?.bhkType || '').trim().toUpperCase() === '4BHK'
+    && String(quotation?.packageType || '').trim().toUpperCase() === 'LUXURIOUS'
+  const vestibuleIndex = blocks.findIndex(
+    (block) => block?.type === 'scope' && String(block?.name || '').toUpperCase().includes('VESTIBULE'),
+  )
+  const pinnedBlock = isLuxury4Bhk && vestibuleIndex >= 0 ? blocks[vestibuleIndex] : null
+  const pinnedHeight = pinnedBlock ? estimateBlockHeight(pinnedBlock) : 0
+  const paginatedBlocks = pinnedBlock
+    ? blocks.filter((_, index) => index !== vestibuleIndex)
+    : blocks
+  const pages = paginateBlocks(paginatedBlocks, quotation, pinnedHeight)
+  if (pinnedBlock && pages.length) {
+    if (pages[0].length) {
+      const moved = pages[0].splice(0, pages[0].length)
+      if (!pages[1]) pages[1] = []
+      pages[1] = [...moved, ...pages[1]]
+    }
+  }
 
   return (
     <Document>
@@ -529,7 +624,9 @@ export const QuotationPDFDocument = ({ quotation = {}, headerImageBase64 = null,
             <View style={styles.pageInner}>
               {isFirstPage ? <PageHeader headerImageBase64={headerImageBase64} /> : null}
               {isFirstPage ? <ClientSection quotation={quotation} /> : null}
-              {pageBlocks.map(renderBlock)}
+              {!isFirstPage || !pinnedBlock ? pageBlocks.map(renderBlock) : null}
+              {isFirstPage && pinnedBlock ? <View style={styles.pinnedSpacer} /> : null}
+              {isFirstPage && pinnedBlock ? renderBlock(pinnedBlock) : null}
               {isLastPage ? <LastPageFooter /> : null}
             </View>
             {isLastPage && footerImageBase64 ? <Image src={footerImageBase64} style={styles.footerImage} /> : null}
@@ -560,6 +657,7 @@ const styles = StyleSheet.create({
   },
   pageInner: {
     flexDirection: 'column',
+    flex: 1,
   },
 
   headerWrap: {
@@ -860,6 +958,38 @@ const styles = StyleSheet.create({
   signatureLabel: {
     fontSize: 11,
   },
+  linkSection: {
+    marginTop: mm(4),
+    gap: mm(2.2),
+  },
+  linkTitle: {
+    fontSize: 11.4,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    marginBottom: mm(1),
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    textDecoration: 'none',
+  },
+  linkIcon: {
+    width: mm(8.4),
+    height: mm(8.4),
+    borderRadius: mm(4.2),
+    backgroundColor: COLORS.red,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: mm(2.8),
+  },
+  iconSvg: {
+    width: mm(5.4),
+    height: mm(5.4),
+  },
+  linkText: {
+    fontSize: 10.8,
+    color: COLORS.black,
+  },
   footerImage: {
     position: 'absolute',
     left: PAGE_PADDING_X,
@@ -877,6 +1007,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11.2,
     color: COLORS.mutedText,
+  },
+  pinnedSpacer: {
+    flexGrow: 1,
   },
 })
 

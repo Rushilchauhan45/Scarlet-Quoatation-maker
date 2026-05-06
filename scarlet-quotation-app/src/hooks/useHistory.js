@@ -46,6 +46,17 @@ export const useHistory = () => {
     persist(next)
   }
 
+  const renameQuotation = (id, displayName) => {
+    const next = history.map((item) => {
+      if (item.id !== id) return item
+      return {
+        ...item,
+        displayName: displayName ? String(displayName).trim() : '',
+      }
+    })
+    persist(next)
+  }
+
   const nextQuotationNumber = useMemo(() => {
     return () => {
       const current = Number(localStorage.getItem(COUNTER_KEY) || 0) + 1
@@ -55,5 +66,5 @@ export const useHistory = () => {
     }
   }, [])
 
-  return { history, saveQuotation, deleteQuotation, nextQuotationNumber }
+  return { history, saveQuotation, deleteQuotation, renameQuotation, nextQuotationNumber }
 }
