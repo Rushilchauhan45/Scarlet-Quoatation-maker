@@ -209,17 +209,17 @@ const fourBhkPremiumMaterialSpec = [
   },
   {
     material: 'Designer Sofa',
-    specification: '',
+    specification: '8 Seaters',
     clarity: 'Rs. 95,000/- Maximum',
   },
   {
     material: 'Dining Table',
-    specification: 'Imported',
+    specification: '6 Seaters',
     clarity: 'Rs. 70,000/- Maximum',
   },
   {
     material: 'Corner Table',
-    specification: '',
+    specification: 'Imported',
     clarity: 'Rs. 10,000/- Maximum',
   },
   {
@@ -312,24 +312,34 @@ const fourBhkLuxuryMaterialSpec = [
     clarity: 'Rs. 1,05,000/- Maximum',
   },
   {
+    material: 'Designer Sofa[Master Bedroom]',
+    specification: '2 Seaters',
+    clarity: 'Rs. 28,000/- Maximum',
+  },
+  {
     material: 'Dining Table',
     specification: '6 Seaters',
     clarity: 'Rs. 90,000/- Maximum',
   },
   {
     material: 'Designer Chair',
-    specification: '',
+    specification: 'Imported',
     clarity: 'Rs. 15,000/- Per Chair',
   },
   {
     material: 'Corner Table',
-    specification: '',
+    specification: 'Imported',
     clarity: 'Rs. 12,000/- Maximum',
   },
   {
     material: 'Centre table',
     specification: 'Imported',
     clarity: 'Rs. 20,000/- Maximum',
+  },
+  {
+    material: 'Centre table[Master Bedroom]',
+    specification: 'Imported',
+    clarity: 'Rs. 12,000/- Maximum',
   },
   {
     material: 'New Electric Points',
@@ -690,8 +700,10 @@ Our design philosophy emphasizes attention to detail, personalized concepts, and
       section('MASTER BEDROOM', [
         pricedItem({ text: 'Bed in tapestry finish with hydraulic storage : 6\'-0"x6\'-6"', paramLabel: 'quantity', paramValue: 1, rate: 42000 }),
         pricedItem({ text: 'Decorative head board in tapestry finish', paramLabel: 'feet', paramValue: 18, rate: 1277.78 }),
-        pricedItem({ text: 'Main wall with paneling in laminate finish : 9\'-0" x 12\'-0"', paramLabel: 'feet', paramValue: 108, rate: 1203.7 }),
+        pricedItem({ text: 'Main wall with paneling in PU or Veneer finish : 9\'-0" x 12\'-0"', paramLabel: 'feet', paramValue: 108, rate: 1203.7 }),
         pricedItem({ text: 'Side table in PU or Veneer finish [Quantity - 2]', paramLabel: 'feet', paramValue: 6, rate: 3333.33 }),
+        pricedItem({ text: 'Designer Sofa : 2 Seaters ', paramLabel: 'Per Seat', paramValue: 2, rate: 14000 }),
+        pricedItem({ text: 'Centre table [Quantity - 1]', paramLabel: 'Quantity', paramValue: 1, rate: 12000 }),
         pricedItem({ text: 'Dressing mirror with storage in PU or Veneer finish', paramLabel: 'feet', paramValue: 15, rate: 2666.67 }),
         pricedItem({ text: 'Wardrobe sliding or openable in PU, Veneer or glass finish with 7\'-6" length & inner shelves partition and 2 drawers with full height loft', paramLabel: 'feet', paramValue: 68, rate: 1911.76 }),
         pricedItem({ text: 'A.C. pelmet with color finish', paramLabel: 'feet', paramValue: 15, rate: 800 }),
