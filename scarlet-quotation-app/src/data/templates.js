@@ -1,6 +1,9 @@
 import { threeBhkTurnkeyTemplates } from './threeBhkTurnkeyTemplates'
 import { twoBhkTurnkeyTemplates } from './twoBhkTurnkeyTemplates'
 import { fourBhkTurnkeyTemplates } from './fourBhkTurnkeyTemplates'
+import { twoBhkDesigningTemplates } from './twoBhkDesigningTemplates'
+import { threeBhkDesigningTemplates } from './threeBhkDesigningTemplates'
+import { fourBhkDesigningTemplates } from './fourBhkDesigningTemplates'
 import { standardMaterialSpec, premiumMaterialSpec, luxuryMaterialSpec } from './materialSpecData'
 
 export const paymentSchedules = {
@@ -44,12 +47,13 @@ const makeTemplate = ({
   paymentSchedule,
   packageType = 'standard',
   materialSpec,
+  notes,
 }) => ({
   title,
   introText,
   sections,
   materialSpec: materialSpec ?? getMaterialSpec(packageType),
-  notes: defaultNotes,
+  notes: notes ?? defaultNotes,
   paymentSchedule,
   estimatedCost,
   packageType,
@@ -170,86 +174,32 @@ export const templates = {
     paymentSchedule: 'turnkey-6stage',
     estimatedCost: fourBhkTurnkeyTemplates.LUXURIOUS.estimatedCost,
   }),
-  '2BHK-designing-standard': {
-    title: 'Quotation For Interior Designing',
-    introText:
-      'Thank you for your inquiry. With reference to our recent discussion, we are pleased to share our basic quote for 3D Rendering and visualization.',
-    sections: [
-      {
-        name: 'Scope of Work',
-        items: [
-          'Presentable 2D furniture lay-out',
-          'Electric details with loop drawing, switchboard details, light details and electric schedule.',
-          'False ceiling details with section detail and 3D modelling',
-          'Interior concept and theme presented in 3d modelling',
-          'Render 3d images after finalizing 3d modelling [2 BHK - 8 views]',
-          '2D presentable details with furniture working drawings',
-          'Color Palate and Mood board',
-          'Material selection with client',
-          'Site Visit [10 Visits]',
-        ],
-      },
-    ],
+  '2BHK-designing-standard': makeTemplate({
+    title: twoBhkDesigningTemplates.STANDARD.title,
+    introText: twoBhkDesigningTemplates.STANDARD.introText,
+    sections: twoBhkDesigningTemplates.STANDARD.sections,
     materialSpec: [],
-    notes: [
-      '[1] Site Visit Policy (within 30 KM of Ahmedabad): Up to 10 site visits are included. Additional visits: ₹4,000/- per visit.',
-      '[2] Site Visit Policy (beyond 30 KM): 3 included visits at defined stages. Additional visits: ₹8,000/- per visit.',
-      '[3] Quotation Customization: This is a standard quotation and can be customized as per requirements.',
-    ],
+    notes: twoBhkDesigningTemplates.STANDARD.notes,
     paymentSchedule: 'designing-4stage',
-    estimatedCost: '80,000',
-  },
+    estimatedCost: twoBhkDesigningTemplates.STANDARD.estimatedCost,
+  }),
   '3BHK-designing-standard': makeTemplate({
-    title: 'Quotation For Interior Designing',
-    introText: '3 BHK designing quotation for 3D visualization and interior planning services.',
-    sections: [{ name: 'Scope of Work', items: ['3D renders [12 views]', '2D working drawings', 'Mood board', 'Site visits'] }],
+    title: threeBhkDesigningTemplates.STANDARD.title,
+    introText: threeBhkDesigningTemplates.STANDARD.introText,
+    sections: threeBhkDesigningTemplates.STANDARD.sections,
     materialSpec: [],
+    notes: threeBhkDesigningTemplates.STANDARD.notes,
     paymentSchedule: 'designing-4stage',
-    estimatedCost: '1,20,000',
-  }),
-  '3BHK-designing-premium': makeTemplate({
-    title: 'Quotation For Interior Designing',
-    introText: '3 BHK premium designing quotation with detailed visualization and broader drawing coverage.',
-    sections: [{ name: 'Scope of Work', items: ['3D renders [16 views]', '2D working drawings with sections', 'Mood board + material guidance', 'Site visits'] }],
-    materialSpec: [],
-    packageType: 'premium',
-    paymentSchedule: 'designing-4stage',
-    estimatedCost: '1,45,000',
-  }),
-  '3BHK-designing-luxurious': makeTemplate({
-    title: 'Quotation For Interior Designing',
-    introText: '3 BHK luxurious designing quotation with advanced 3D detailing and complete concept support.',
-    sections: [{ name: 'Scope of Work', items: ['3D renders [20 views]', '2D working drawings with advanced detailing', 'Mood board + curated finishes', 'Site visits'] }],
-    materialSpec: [],
-    packageType: 'luxurious',
-    paymentSchedule: 'designing-4stage',
-    estimatedCost: '1,75,000',
+    estimatedCost: threeBhkDesigningTemplates.STANDARD.estimatedCost,
   }),
   '4BHK-designing-standard': makeTemplate({
-    title: 'Quotation For Interior Designing',
-    introText: '4 BHK designing quotation for complete planning and visualization services.',
-    sections: [{ name: 'Scope of Work', items: ['3D renders [15 views]', '2D working drawings', 'Material coordination', 'Site visits'] }],
+    title: fourBhkDesigningTemplates.STANDARD.title,
+    introText: fourBhkDesigningTemplates.STANDARD.introText,
+    sections: fourBhkDesigningTemplates.STANDARD.sections,
     materialSpec: [],
+    notes: fourBhkDesigningTemplates.STANDARD.notes,
     paymentSchedule: 'designing-4stage',
-    estimatedCost: '1,50,000',
-  }),
-  '4BHK-designing-premium': makeTemplate({
-    title: 'Quotation For Interior Designing',
-    introText: '4 BHK premium designing quotation with richer concept coverage and additional drawing support.',
-    sections: [{ name: 'Scope of Work', items: ['3D renders [20 views]', '2D working drawings with sections', 'Material coordination', 'Site visits'] }],
-    materialSpec: [],
-    packageType: 'premium',
-    paymentSchedule: 'designing-4stage',
-    estimatedCost: '1,80,000',
-  }),
-  '4BHK-designing-luxurious': makeTemplate({
-    title: 'Quotation For Interior Designing',
-    introText: '4 BHK luxurious designing quotation with complete visual detailing and premium concept development.',
-    sections: [{ name: 'Scope of Work', items: ['3D renders [24 views]', '2D detailed working drawings', 'Material coordination + premium palette', 'Site visits'] }],
-    materialSpec: [],
-    packageType: 'luxurious',
-    paymentSchedule: 'designing-4stage',
-    estimatedCost: '2,20,000',
+    estimatedCost: fourBhkDesigningTemplates.STANDARD.estimatedCost,
   }),
 }
 

@@ -20,9 +20,9 @@ const PAGE_PADDING_X = mm(14)
 const PAGE_PADDING_TOP = mm(14)
 const PAGE_PADDING_BOTTOM = mm(18)
 const PAGE_NUMBER_SPACE = mm(8)
-const FIRST_PAGE_RESERVED_MIN = mm(136)
-const FIRST_PAGE_RESERVED_MAX = mm(178)
-const LAST_PAGE_FOOTER_RESERVED = mm(104)
+const FIRST_PAGE_RESERVED_MIN = mm(122)
+const FIRST_PAGE_RESERVED_MAX = mm(162)
+const LAST_PAGE_FOOTER_RESERVED = mm(82)
 
 const BLOCK_GAP = mm(3.6)
 
@@ -49,6 +49,8 @@ const formatAmountForPdf = (value) =>
 
 const estimateLines = (value, charsPerLine) =>
   Math.max(1, Math.ceil(String(value ?? '').trim().length / charsPerLine))
+
+const isNoteSectionHeading = (note) => /^\[\d+\]/.test(String(note ?? '').trim())
 
 const estimateFirstPageReserved = (quotation = {}) => {
   const hasGst = Boolean(quotation?.showGstInPdf && String(quotation?.gstNumber || '').trim())
@@ -97,6 +99,7 @@ const estimateMaterialBlockHeight = (block) => {
 }
 
 const estimateNoteRowHeight = (note) => {
+  if (isNoteSectionHeading(note)) return mm(8.4)
   const lines = estimateLines(note, 84)
   return Math.max(mm(7.8), lines * mm(4.8))
 }
@@ -276,15 +279,17 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0) => {
       continue
     }
 
-    const isSplitCandidate = block.type === 'material' || block.type === 'notes'
+    const isSplitCandidate = block.type === 'material' || block.type === 'notes' || block.type === 'payment'
 
     if (isSplitCandidate && available > mm(14)) {
       const source = block.type === 'notes' ? block.notes : block.rows
       const rowHeightGetter =
         block.type === 'material'
           ? estimateMaterialRowHeight
-          : estimateNoteRowHeight
-      const baseHeight = block.type === 'material' ? mm(17) : mm(11)
+          : block.type === 'payment'
+            ? estimatePaymentRowHeight
+            : estimateNoteRowHeight
+      const baseHeight = block.type === 'material' ? mm(17) : block.type === 'payment' ? mm(15) : mm(11)
 
       let used = baseHeight + BLOCK_GAP
       let fitCount = 0
@@ -383,7 +388,7 @@ const renderScopeRow = (item, index, items) => {
 }
 
 const ScopeBlock = ({ block }) => (
-  <View style={styles.block} wrap={false}>
+  <View style={styles.block}>
     <View style={styles.descriptionHeader}>
       <Text style={styles.descriptionHeaderText}>{safeText(block?.name)}</Text>
     </View>
@@ -394,7 +399,7 @@ const ScopeBlock = ({ block }) => (
 )
 
 const MaterialBlock = ({ block }) => (
-  <View style={styles.block} wrap={false}>
+  <View style={styles.block}>
     {!block?.continued ? <Text style={styles.materialHeading}>MATERIAL SPECIFICATION</Text> : null}
     <View style={styles.materialTable}>
       <View style={styles.materialHeaderRow}>
@@ -430,19 +435,34 @@ const MaterialBlock = ({ block }) => (
 )
 
 const NotesBlock = ({ block }) => (
-  <View style={styles.block} wrap={false}>
-    <Text style={styles.notesHeading}>Notes:</Text>
-    {(block?.notes || []).map((note, index) => (
-      <View key={`note-${index}`} style={styles.noteRow}>
-        <Text style={styles.noteBullet}>•</Text>
-        <Text style={styles.noteText}>{safeText(note)}</Text>
-      </View>
-    ))}
+  <View style={styles.block}>
+    <Text style={styles.notesHeading}>• Notes:</Text>
+    {(block?.notes || []).map((note, index) => {
+      const safeNote = safeText(note)
+      if (isNoteSectionHeading(safeNote)) {
+        return (
+          <Text key={`note-heading-${index}`} style={styles.noteSectionHeading}>
+            {safeNote}
+          </Text>
+        )
+      }
+
+      const visitMatch = safeNote.match(/^(\d+(?:st|nd|rd|th)\s+Visit:)\s*(.*)$/i)
+      return (
+        <View key={`note-${index}`} style={styles.noteRow}>
+          <Text style={styles.noteBullet}>•</Text>
+          <Text style={styles.noteText}>
+            {visitMatch ? <Text style={styles.noteVisitLabel}>{visitMatch[1]} </Text> : null}
+            {visitMatch ? visitMatch[2] : safeNote}
+          </Text>
+        </View>
+      )
+    })}
   </View>
 )
 
 const PaymentBlock = ({ block }) => (
-  <View style={styles.block} wrap={false}>
+  <View style={styles.block}>
     <Text style={styles.paymentHeading}>PAYMENT SCHEDULE:</Text>
     <Text style={styles.paymentIntro}>Payment should be done in stage wise as follows:</Text>
     {(block?.rows || []).map((row, index) => (
@@ -549,7 +569,7 @@ const LastPageFooter = () => (
   <View style={styles.footerWrap} wrap={false}>
     <Text style={styles.footerCenterLine}>We look forward to transforming your space with elegance and functionality.</Text>
     <Text style={styles.footerCenterLine}>Thank you for considering Scarlet Interior Design.</Text>
-    <Text style={styles.bestRegards}>Best Regards,</Text>
+    <Text style={styles.bestRegards}>Regards,</Text>
 
     <View style={styles.footerSignatureRow}>
       <Text style={styles.footerBrand}>SCARLET INTERIOR DESIGN</Text>
@@ -594,24 +614,7 @@ const renderBlock = (block) => {
 
 export const QuotationPDFDocument = ({ quotation = {}, headerImageBase64 = null, footerImageBase64 = null }) => {
   const blocks = buildBlocks(quotation)
-  const isLuxury4Bhk = String(quotation?.bhkType || '').trim().toUpperCase() === '4BHK'
-    && String(quotation?.packageType || '').trim().toUpperCase() === 'LUXURIOUS'
-  const vestibuleIndex = blocks.findIndex(
-    (block) => block?.type === 'scope' && String(block?.name || '').toUpperCase().includes('VESTIBULE'),
-  )
-  const pinnedBlock = isLuxury4Bhk && vestibuleIndex >= 0 ? blocks[vestibuleIndex] : null
-  const pinnedHeight = pinnedBlock ? estimateBlockHeight(pinnedBlock) : 0
-  const paginatedBlocks = pinnedBlock
-    ? blocks.filter((_, index) => index !== vestibuleIndex)
-    : blocks
-  const pages = paginateBlocks(paginatedBlocks, quotation, pinnedHeight)
-  if (pinnedBlock && pages.length) {
-    if (pages[0].length) {
-      const moved = pages[0].splice(0, pages[0].length)
-      if (!pages[1]) pages[1] = []
-      pages[1] = [...moved, ...pages[1]]
-    }
-  }
+  const pages = paginateBlocks(blocks, quotation)
 
   return (
     <Document>
@@ -624,9 +627,7 @@ export const QuotationPDFDocument = ({ quotation = {}, headerImageBase64 = null,
             <View style={styles.pageInner}>
               {isFirstPage ? <PageHeader headerImageBase64={headerImageBase64} /> : null}
               {isFirstPage ? <ClientSection quotation={quotation} /> : null}
-              {!isFirstPage || !pinnedBlock ? pageBlocks.map(renderBlock) : null}
-              {isFirstPage && pinnedBlock ? <View style={styles.pinnedSpacer} /> : null}
-              {isFirstPage && pinnedBlock ? renderBlock(pinnedBlock) : null}
+              {pageBlocks.map(renderBlock)}
               {isLastPage ? <LastPageFooter /> : null}
             </View>
             {isLastPage && footerImageBase64 ? <Image src={footerImageBase64} style={styles.footerImage} /> : null}
@@ -861,6 +862,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: mm(1.2),
   },
+  noteSectionHeading: {
+    fontSize: 12.2,
+    fontWeight: 'bold',
+    marginTop: mm(1.4),
+    marginBottom: mm(1.2),
+  },
   noteBullet: {
     width: mm(4),
     fontSize: 10.6,
@@ -870,6 +877,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 11.5,
     lineHeight: 1.4,
+  },
+  noteVisitLabel: {
+    fontWeight: 'bold',
   },
 
   paymentHeading: {
@@ -1007,9 +1017,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11.2,
     color: COLORS.mutedText,
-  },
-  pinnedSpacer: {
-    flexGrow: 1,
   },
 })
 

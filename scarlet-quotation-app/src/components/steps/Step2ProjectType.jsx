@@ -6,14 +6,14 @@ export default function Step2ProjectType({ quotation, update }) {
     update({
       bhkType,
       otherBhk: bhkType === 'Other' ? quotation.otherBhk : '',
-      packageType: normalizePackageForFlow(bhkType, quotation.packageType),
+      packageType: normalizePackageForFlow(bhkType, quotation.packageType, quotation.quotationType),
     })
   }
 
   const onQuotationTypeSelect = (quotationType) => {
     update({
       quotationType,
-      packageType: normalizePackageForFlow(quotation.bhkType, quotation.packageType),
+      packageType: normalizePackageForFlow(quotation.bhkType, quotation.packageType, quotationType),
     })
   }
 

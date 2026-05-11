@@ -8,7 +8,8 @@ const packageDetails = {
 }
 
 export default function Step3Package({ quotation, update }) {
-  const allowedPackages = getAllowedPackages(quotation.bhkType)
+  const isDesigning = quotation.quotationType === 'Only Designing (3D Visualization)'
+  const allowedPackages = getAllowedPackages(quotation.bhkType, quotation.quotationType)
 
   if (!allowedPackages.length) {
     return (
@@ -21,7 +22,12 @@ export default function Step3Package({ quotation, update }) {
   return (
     <div>
       <h3 className="mb-3 text-lg font-bold">Choose Package</h3>
-      {quotation.bhkType === '2BHK' ? (
+      {isDesigning ? (
+        <p className="mb-3 rounded-xl border border-[#E8E8E8] bg-[#FAFAFA] p-3 text-sm">
+          For designing quotations, only one pre-built format is available under <strong>STANDARD</strong>.
+        </p>
+      ) : null}
+      {!isDesigning && quotation.bhkType === '2BHK' ? (
         <p className="mb-3 rounded-xl border border-[#E8E8E8] bg-[#FAFAFA] p-3 text-sm">
           For 2BHK, only <strong>STANDARD</strong> package is available.
         </p>

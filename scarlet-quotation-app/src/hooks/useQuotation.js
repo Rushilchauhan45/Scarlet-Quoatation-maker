@@ -94,9 +94,10 @@ export const useQuotation = (quotationNumberFactory) => {
       const next = { ...prev, ...patch }
       if (
         Object.prototype.hasOwnProperty.call(patch, 'bhkType') ||
-        Object.prototype.hasOwnProperty.call(patch, 'packageType')
+        Object.prototype.hasOwnProperty.call(patch, 'packageType') ||
+        Object.prototype.hasOwnProperty.call(patch, 'quotationType')
       ) {
-        next.packageType = normalizePackageForFlow(next.bhkType, next.packageType)
+        next.packageType = normalizePackageForFlow(next.bhkType, next.packageType, next.quotationType)
         next.skipTemplateAutoApply = false
       }
 
@@ -151,7 +152,7 @@ export const useQuotation = (quotationNumberFactory) => {
       totalSquareFeet: entryData.totalSquareFeet ?? '',
       historyId: entryData.historyId ?? entryData.id ?? null,
       skipTemplateAutoApply: true,
-      packageType: normalizePackageForFlow(entryData.bhkType, entryData.packageType),
+      packageType: normalizePackageForFlow(entryData.bhkType, entryData.packageType, entryData.quotationType),
       sections: safeSections,
       marginAmount: entryData.marginAmount ?? entryData.marginPercent ?? '0',
     })
