@@ -28,7 +28,11 @@ export const twoBhkDesigningTemplates = {
   STANDARD: {
     title: 'Quotation For Interior Designing',
     introText:
-      'Thank you for your inquiry. With reference to our recent discussion, we are pleased to share our basic quote for 3D Rendering and visualization.',
+      `Respected Sir/Ma'am,
+
+We are pleased to present our quotation for 2 BHK Interior Designing Services, thoughtfully planned to create a functional, aesthetic, and well-balanced living space. This package includes space planning, furniture layout, concept development, material suggestions, color coordination, and realistic 3D visualization to help you visualize your dream home before execution.
+
+Our design approach focuses on smart utilization of space, modern aesthetics, and practical solutions tailored to your lifestyle and preferences.`,
     estimatedCost: '80,000',
     notes: twoBhkDesigningNotes,
     sections: [

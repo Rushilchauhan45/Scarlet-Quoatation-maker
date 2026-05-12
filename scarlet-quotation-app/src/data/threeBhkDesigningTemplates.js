@@ -28,7 +28,11 @@ export const threeBhkDesigningTemplates = {
   STANDARD: {
     title: 'Quotation For Interior Designing',
     introText:
-      'Thank you for your inquiry. With reference to our recent discussion, we are pleased to share our basic quote for 3D Rendering and visualization.',
+      `Respected Sir/Ma'am,
+
+We are pleased to share our quotation for 3 BHK Interior Designing Services, curated to deliver a modern, elegant, and comfortable living experience. This package includes detailed space planning, furniture layouts, design concepts, material and color selection guidance, ceiling and lighting concepts, and high-quality 3D visualizations for better design understanding.
+
+Our goal is to create a harmonious and visually appealing home that reflects your personality while maintaining functionality and design balance.`,
     estimatedCost: '1,20,000',
     notes: threeBhkDesigningNotes,
     sections: [

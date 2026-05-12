@@ -51,6 +51,10 @@ const estimateLines = (value, charsPerLine) =>
   Math.max(1, Math.ceil(String(value ?? '').trim().length / charsPerLine))
 
 const isNoteSectionHeading = (note) => /^\[\d+\]/.test(String(note ?? '').trim())
+const isDesigningQuotation = (quotation = {}) =>
+  String(quotation?.quotationType || '').trim() === 'Only Designing (3D Visualization)'
+
+const countScopeItems = (items = []) => items.filter((item) => !item?.isSubTitle).length
 
 const estimateFirstPageReserved = (quotation = {}) => {
   const hasGst = Boolean(quotation?.showGstInPdf && String(quotation?.gstNumber || '').trim())
@@ -186,6 +190,61 @@ const buildBlocks = (quotation = {}) => {
   return blocks
 }
 
+const splitScopeBlockByCount = (block, firstCount) => {
+  if (!block || block.type !== 'scope') return { firstBlock: block, secondBlock: null }
+  const items = block.items || []
+  const firstItems = items.slice(0, firstCount)
+  const remainingItems = items.slice(firstCount)
+  const firstBlock = {
+    ...block,
+    key: `${block.key}-part-1`,
+    items: firstItems,
+    serialOffset: 0,
+  }
+  const secondBlock = remainingItems.length
+    ? {
+        ...block,
+        key: `${block.key}-part-2`,
+        items: remainingItems,
+        continued: true,
+        serialOffset: countScopeItems(firstItems),
+      }
+    : null
+
+  return { firstBlock, secondBlock }
+}
+
+const paginateDesigningBlocks = (blocks = []) => {
+  const scopeBlocks = blocks.filter((block) => block.type === 'scope')
+  const notesBlock = blocks.find((block) => block.type === 'notes')
+  const paymentBlock = blocks.find((block) => block.type === 'payment')
+  const totalBlock = blocks.find((block) => block.type === 'total')
+
+  const pages = []
+  const [firstScope, ...restScopes] = scopeBlocks
+
+  if (firstScope) {
+    const { firstBlock, secondBlock } = splitScopeBlockByCount(firstScope, 3)
+    pages.push([firstBlock])
+
+    const pageTwoBlocks = []
+    if (secondBlock) pageTwoBlocks.push(secondBlock)
+    if (restScopes.length) pageTwoBlocks.push(...restScopes)
+    if (notesBlock) pageTwoBlocks.push(notesBlock)
+    pages.push(pageTwoBlocks)
+  } else {
+    pages.push([])
+    pages.push(notesBlock ? [notesBlock] : [])
+  }
+
+  const pageThreeBlocks = []
+  if (paymentBlock) pageThreeBlocks.push(paymentBlock)
+  if (totalBlock) pageThreeBlocks.push(totalBlock)
+  pages.push(pageThreeBlocks)
+
+  return pages
+}
+
 const createSplitBlocks = (block, fitCount, partTag) => {
   if (block.type === 'material') {
     return {
@@ -289,7 +348,7 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0) => {
           : block.type === 'payment'
             ? estimatePaymentRowHeight
             : estimateNoteRowHeight
-      const baseHeight = block.type === 'material' ? mm(17) : block.type === 'payment' ? mm(15) : mm(11)
+      const baseHeight = block.type === 'material' ? mm(18.5) : block.type === 'payment' ? mm(16.2) : mm(12)
 
       let used = baseHeight + BLOCK_GAP
       let fitCount = 0
@@ -300,13 +359,36 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0) => {
         used = nextUsed
       }
 
-      if (fitCount > 0 && fitCount < source.length) {
-        const splitResult = createSplitBlocks(block, fitCount, splitTag)
+      const totalRows = source.length
+      const minSplitRemainder = block.type === 'material' ? 4 : 2
+      let splitCount = fitCount
+
+      if (fitCount > 0 && fitCount < totalRows) {
+        const remaining = totalRows - fitCount
+        const maxSplitRows = totalRows - minSplitRemainder
+
+        if (maxSplitRows <= 0) {
+          splitCount = 0
+        } else if (remaining < minSplitRemainder) {
+          const canMoveWhole =
+            currentPage.length > 0 &&
+            estimateBlockHeight(block) <= regularPageLimit
+          if (canMoveWhole) {
+            splitCount = 0
+          } else {
+            splitCount = Math.min(splitCount, maxSplitRows)
+            if (splitCount >= totalRows) splitCount = 0
+          }
+        }
+      }
+
+      if (splitCount > 0 && splitCount < totalRows) {
+        const splitResult = createSplitBlocks(block, splitCount, splitTag)
         splitTag += 2
         currentPage.push(splitResult.fitted)
         currentHeight += estimateBlockHeight(splitResult.fitted)
         pending.unshift(splitResult.remaining)
-      } else if (fitCount === source.length) {
+      } else if (fitCount === totalRows) {
         currentPage.push(block)
         currentHeight += blockHeight
       } else {
@@ -362,9 +444,10 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0) => {
   return pages
 }
 
-const renderScopeRow = (item, index, items) => {
+const renderScopeRow = (item, index, items, serialOffset = 0) => {
   const rowKey = item?.id || `${item?.text || 'scope'}-${index}`
-  const serial = items.slice(0, index + 1).filter((entry) => !entry?.isSubTitle).length
+  const serial =
+    serialOffset + items.slice(0, index + 1).filter((entry) => !entry?.isSubTitle).length
 
   if (item?.isSubTitle) {
     return (
@@ -393,7 +476,9 @@ const ScopeBlock = ({ block }) => (
       <Text style={styles.descriptionHeaderText}>{safeText(block?.name)}</Text>
     </View>
     <View style={styles.scopeTable}>
-      {(block?.items || []).map((item, index, rows) => renderScopeRow(item, index, rows))}
+      {(block?.items || []).map((item, index, rows) =>
+        renderScopeRow(item, index, rows, block?.serialOffset || 0),
+      )}
     </View>
   </View>
 )
@@ -614,7 +699,9 @@ const renderBlock = (block) => {
 
 export const QuotationPDFDocument = ({ quotation = {}, headerImageBase64 = null, footerImageBase64 = null }) => {
   const blocks = buildBlocks(quotation)
-  const pages = paginateBlocks(blocks, quotation)
+  const pages = isDesigningQuotation(quotation)
+    ? paginateDesigningBlocks(blocks)
+    : paginateBlocks(blocks, quotation)
 
   return (
     <Document>
