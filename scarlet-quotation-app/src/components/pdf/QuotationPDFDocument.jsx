@@ -53,8 +53,15 @@ const estimateLines = (value, charsPerLine) =>
 const isNoteSectionHeading = (note) => /^\[\d+\]/.test(String(note ?? '').trim())
 const isDesigningQuotation = (quotation = {}) =>
   String(quotation?.quotationType || '').trim() === 'Only Designing (3D Visualization)'
+const isFourBhkTurnkeyQuotation = (quotation = {}) =>
+  String(quotation?.bhkType || '').trim().toUpperCase() === '4BHK' && !isDesigningQuotation(quotation)
+const isLuxuryPackage = (quotation = {}) => {
+  const safePackage = String(quotation?.packageType || '').trim().toUpperCase()
+  return safePackage === 'LUXURIOUS' || safePackage === 'LUXURY'
+}
 
 const countScopeItems = (items = []) => items.filter((item) => !item?.isSubTitle).length
+const normalizeMatchText = (value) => String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 const estimateFirstPageReserved = (quotation = {}) => {
   const hasGst = Boolean(quotation?.showGstInPdf && String(quotation?.gstNumber || '').trim())
@@ -297,7 +304,8 @@ const createSplitBlocks = (block, fitCount, partTag) => {
   return { fitted: null, remaining: block }
 }
 
-const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0) => {
+const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0, options = {}) => {
+  const reserveLastPageFooter = options.reserveLastPageFooter !== false
   const baseLimit = PAGE_HEIGHT - PAGE_PADDING_TOP - PAGE_PADDING_BOTTOM - PAGE_NUMBER_SPACE
   let firstPageLimit = baseLimit - estimateFirstPageReserved(quotation) + mm(6)
   if (pinnedHeight) firstPageLimit -= pinnedHeight + mm(3)
@@ -427,21 +435,169 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0) => {
     if (moved) pages[0].push(moved)
   }
 
-  let guard = 0
-  while (guard < 50) {
-    guard += 1
-    const lastIndex = pages.length - 1
-    const lastLimit = (lastIndex === 0 ? firstPageLimit : regularPageLimit) - LAST_PAGE_FOOTER_RESERVED
-    const usedHeight = sumHeights(pages[lastIndex])
+  if (reserveLastPageFooter) {
+    let guard = 0
+    while (guard < 50) {
+      guard += 1
+      const lastIndex = pages.length - 1
+      const lastLimit = (lastIndex === 0 ? firstPageLimit : regularPageLimit) - LAST_PAGE_FOOTER_RESERVED
+      const usedHeight = sumHeights(pages[lastIndex])
 
-    if (usedHeight <= lastLimit || pages[lastIndex].length <= 1) break
+      if (usedHeight <= lastLimit || pages[lastIndex].length <= 1) break
 
-    const movedBlock = pages[lastIndex].pop()
-    if (!pages[lastIndex + 1]) pages.push([])
-    pages[lastIndex + 1].unshift(movedBlock)
+      const movedBlock = pages[lastIndex].pop()
+      if (!pages[lastIndex + 1]) pages.push([])
+      pages[lastIndex + 1].unshift(movedBlock)
+    }
   }
 
   return pages
+}
+
+const findMaterialRowIndex = (rows = [], keyword) =>
+  rows.findIndex((row) => normalizeMatchText(row?.material).includes(keyword))
+
+const paginateFourBhkTurnkeyBlocks = (blocks = [], quotation = {}) => {
+  const baselinePages = paginateBlocks(blocks, quotation)
+  const materialBlock = blocks.find((block) => block.type === 'material')
+  const notesBlock = blocks.find((block) => block.type === 'notes')
+  const paymentBlock = blocks.find((block) => block.type === 'payment')
+  const totalBlock = blocks.find((block) => block.type === 'total')
+
+  if (!materialBlock || !notesBlock || !paymentBlock || !totalBlock) return baselinePages
+
+  const materialRows = materialBlock.rows || []
+  const hardwareIndex = findMaterialRowIndex(materialRows, 'hardware regular')
+  const decorativeIndex = findMaterialRowIndex(materialRows, 'decorative door')
+  const newElectricIndex = findMaterialRowIndex(materialRows, 'new electric points')
+
+  if (
+    hardwareIndex < 0 ||
+    decorativeIndex < 0 ||
+    newElectricIndex < 0 ||
+    decorativeIndex <= hardwareIndex ||
+    newElectricIndex < decorativeIndex
+  ) {
+    return baselinePages
+  }
+
+  const scopePages = []
+  for (const page of baselinePages) {
+    const firstMaterialBlockIndex = page.findIndex((block) => block.type === 'material')
+    if (firstMaterialBlockIndex === -1) {
+      scopePages.push(page.filter((block) => block.type === 'scope'))
+      continue
+    }
+
+    const leadingScopeBlocks = page.slice(0, firstMaterialBlockIndex).filter((block) => block.type === 'scope')
+    if (leadingScopeBlocks.length) scopePages.push(leadingScopeBlocks)
+    break
+  }
+
+  const pageSixRows = materialRows.slice(0, hardwareIndex + 1)
+  const pageSevenRows = materialRows.slice(decorativeIndex, newElectricIndex + 1)
+  const allNotes = notesBlock.notes || []
+
+  if (!pageSixRows.length || !pageSevenRows.length) return baselinePages
+
+  if (isLuxuryPackage(quotation)) {
+    const pageSevenNotes = allNotes.slice(0, 6)
+    const pageEightNotes = allNotes.slice(6)
+
+    return [
+      ...scopePages,
+      [
+        {
+          ...materialBlock,
+          key: 'material-fixed-page-6',
+          rows: pageSixRows,
+          continued: false,
+        },
+      ],
+      [
+        {
+          ...materialBlock,
+          key: 'material-fixed-page-7',
+          rows: pageSevenRows,
+          continued: true,
+        },
+        ...(pageSevenNotes.length
+          ? [
+              {
+                ...notesBlock,
+                key: 'notes-fixed-page-7',
+                notes: pageSevenNotes,
+                continued: false,
+              },
+            ]
+          : []),
+      ],
+      [
+        ...(pageEightNotes.length
+          ? [
+              {
+                ...notesBlock,
+                key: 'notes-fixed-page-8',
+                notes: pageEightNotes,
+                continued: true,
+              },
+            ]
+          : []),
+        {
+          ...paymentBlock,
+          key: 'payment-fixed-page-8',
+          continued: false,
+        },
+      ],
+      [
+        {
+          ...totalBlock,
+          key: 'total-fixed-page-9',
+        },
+      ],
+    ]
+  }
+
+  return [
+    ...scopePages,
+    [
+      {
+        ...materialBlock,
+        key: 'material-fixed-page-6',
+        rows: pageSixRows,
+        continued: false,
+      },
+    ],
+    [
+      {
+        ...materialBlock,
+        key: 'material-fixed-page-7',
+        rows: pageSevenRows,
+        continued: true,
+      },
+      ...((notesBlock.notes || []).length
+        ? [
+            {
+              ...notesBlock,
+              key: 'notes-fixed-page-7',
+              notes: allNotes,
+              continued: false,
+            },
+          ]
+        : []),
+    ],
+    [
+      {
+        ...paymentBlock,
+        key: 'payment-fixed-tail',
+        continued: false,
+      },
+      {
+        ...totalBlock,
+        key: 'total-fixed-tail',
+      },
+    ],
+  ]
 }
 
 const renderScopeRow = (item, index, items, serialOffset = 0) => {
@@ -701,7 +857,9 @@ export const QuotationPDFDocument = ({ quotation = {}, headerImageBase64 = null,
   const blocks = buildBlocks(quotation)
   const pages = isDesigningQuotation(quotation)
     ? paginateDesigningBlocks(blocks)
-    : paginateBlocks(blocks, quotation)
+    : isFourBhkTurnkeyQuotation(quotation)
+      ? paginateFourBhkTurnkeyBlocks(blocks, quotation)
+      : paginateBlocks(blocks, quotation)
 
   return (
     <Document>
