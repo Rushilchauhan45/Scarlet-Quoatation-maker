@@ -30,6 +30,14 @@ Font.registerHyphenationCallback((word) => [word])
 
 const normalizePdfText = (value) => String(value ?? '').replace(/₹/g, 'Rs.')
 
+const sanitizeIntroLineStarts = (value) =>
+  String(value ?? '')
+    .replace(/\uFEFF/g, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/^[\t ]*[\u0080-\u009F]+\s*/gm, '')
+    .replace(/^[\t ]*[Øø⇒→►▸•◦▪▫»›]+\s*/gm, '')
+
 const safeText = (value, fallback = '-') => {
   const text = String(value ?? '').trim()
   const output = text || String(fallback ?? '').trim()
@@ -40,7 +48,8 @@ const formatIntroForPdf = (quotation = {}) => {
   const intro = String(quotation?.introText ?? '')
   const isLuxury4Bhk = String(quotation?.bhkType || '').trim().toUpperCase() === '4BHK'
     && String(quotation?.packageType || '').trim().toUpperCase() === 'LUXURIOUS'
-  const normalized = isLuxury4Bhk ? intro.replace(/\n\s*\n/g, '\n') : intro
+  const sanitized = sanitizeIntroLineStarts(intro)
+  const normalized = isLuxury4Bhk ? sanitized.replace(/\n\s*\n/g, '\n') : sanitized
   return safeText(normalized)
 }
 
