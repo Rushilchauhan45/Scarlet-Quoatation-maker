@@ -25,6 +25,11 @@ const FIRST_PAGE_RESERVED_MAX = mm(162)
 const LAST_PAGE_FOOTER_RESERVED = mm(82)
 
 const BLOCK_GAP = mm(3.6)
+const MIN_SPLIT_HEAD_ROWS = {
+  material: 4,
+  notes: 2,
+  payment: 2,
+}
 
 Font.registerHyphenationCallback((word) => [word])
 
@@ -367,11 +372,13 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0, options =
             : estimateNoteRowHeight
       const baseHeight = block.type === 'material' ? mm(18.5) : block.type === 'payment' ? mm(16.2) : mm(12)
 
+      const splitSafety = block.type === 'material' ? mm(4) : mm(2)
+      const effectiveAvailable = Math.max(0, available - splitSafety)
       let used = baseHeight + BLOCK_GAP
       let fitCount = 0
       for (let i = 0; i < source.length; i += 1) {
         const nextUsed = used + rowHeightGetter(source[i])
-        if (nextUsed > available) break
+        if (nextUsed > effectiveAvailable) break
         fitCount += 1
         used = nextUsed
       }
@@ -383,13 +390,19 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0, options =
       if (fitCount > 0 && fitCount < totalRows) {
         const remaining = totalRows - fitCount
         const maxSplitRows = totalRows - minSplitRemainder
+        const minHeadRows = MIN_SPLIT_HEAD_ROWS[block.type] || 1
+        const canMoveWhole =
+          currentPage.length > 0 &&
+          estimateBlockHeight(block) <= regularPageLimit
+
+        // Avoid tiny fragments like "first 2 rows on this page, rest on next page".
+        if (currentPage.length > 0 && fitCount < minHeadRows) {
+          splitCount = 0
+        }
 
         if (maxSplitRows <= 0) {
           splitCount = 0
         } else if (remaining < minSplitRemainder) {
-          const canMoveWhole =
-            currentPage.length > 0 &&
-            estimateBlockHeight(block) <= regularPageLimit
           if (canMoveWhole) {
             splitCount = 0
           } else {
@@ -460,7 +473,8 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0, options =
     }
   }
 
-  return pages
+  const compactedPages = pages.filter((page) => (page || []).length > 0)
+  return compactedPages.length ? compactedPages : [[]]
 }
 
 const findMaterialRowIndex = (rows = [], keyword) =>

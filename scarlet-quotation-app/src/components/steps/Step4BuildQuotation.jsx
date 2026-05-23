@@ -38,6 +38,10 @@ export default function Step4BuildQuotation({ quotation, update, applyTemplateSe
 
       {quotation.buildMode ? (
         <div className="space-y-5">
+          <div className="rounded-xl border border-[#E8E8E8] bg-[#FAFAFA] px-3 py-2 text-sm text-[#1A1A1A]/80">
+            Reorder karne ke liye drag handle use karein. Jo final sequence yahan set hoga, wahi PDF mein generate hoga.
+          </div>
+
           <div>
             <label className="mb-1 block text-sm font-semibold">Intro Text</label>
             <textarea

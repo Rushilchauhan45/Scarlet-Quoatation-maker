@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { GripVertical, Plus, Trash2 } from 'lucide-react'
 import Button from '../ui/Button'
 import { computeItemAutoAmount, parseNumericInput } from '../../utils/quotationMath'
 
@@ -52,6 +52,19 @@ export default function ScopeBuilder({ sections, onChange }) {
     onChange(safeSections.map((section) => (section.id === id ? { ...section, ...patch } : section)))
   }
 
+  const reorderSections = (draggedSectionId, targetSectionId) => {
+    if (!draggedSectionId || !targetSectionId || draggedSectionId === targetSectionId) return
+
+    const sourceIndex = safeSections.findIndex((section) => section.id === draggedSectionId)
+    const targetIndex = safeSections.findIndex((section) => section.id === targetSectionId)
+    if (sourceIndex < 0 || targetIndex < 0) return
+
+    const nextSections = [...safeSections]
+    const [movedSection] = nextSections.splice(sourceIndex, 1)
+    nextSections.splice(targetIndex, 0, movedSection)
+    onChange(nextSections)
+  }
+
   const addSection = () => {
     onChange([
       ...safeSections,
@@ -100,6 +113,29 @@ export default function ScopeBuilder({ sections, onChange }) {
 
   const updateItemText = (sectionId, itemId, text) => {
     updateItem(sectionId, itemId, (item) => ({ ...item, text }))
+  }
+
+  const reorderItems = (sectionId, draggedItemId, targetItemId) => {
+    if (!draggedItemId || !targetItemId || draggedItemId === targetItemId) return
+
+    onChange(
+      safeSections.map((section) => {
+        if (section.id !== sectionId) return section
+
+        const sourceIndex = section.items.findIndex((item) => item.id === draggedItemId)
+        const targetIndex = section.items.findIndex((item) => item.id === targetItemId)
+        if (sourceIndex < 0 || targetIndex < 0) return section
+
+        const nextItems = [...section.items]
+        const [movedItem] = nextItems.splice(sourceIndex, 1)
+        nextItems.splice(targetIndex, 0, movedItem)
+
+        return {
+          ...section,
+          items: nextItems,
+        }
+      }),
+    )
   }
 
   const updateParameterLabel = (sectionId, itemId, paramLabel) => {
@@ -179,7 +215,15 @@ export default function ScopeBuilder({ sections, onChange }) {
   return (
     <div className="space-y-4">
       {safeSections.map((section) => (
-        <div key={section.id} className="rounded-2xl border border-[#E8E8E8] bg-white p-4">
+        <div
+          key={section.id}
+          className="rounded-2xl border border-[#E8E8E8] bg-white p-4"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault()
+            reorderSections(event.dataTransfer.getData('text/scope-section-id'), section.id)
+          }}
+        >
           {(() => {
             const hasRateColumn = section.items.some((item) => item?.pricing && !item.hideInPdf)
             const gridClass = hasRateColumn
@@ -189,6 +233,18 @@ export default function ScopeBuilder({ sections, onChange }) {
             return (
               <>
           <div className="mb-3 flex items-center gap-2">
+            <button
+              type="button"
+              className="cursor-grab rounded-md border border-[#E8E8E8] p-2 text-[#1A1A1A] hover:bg-[#FAFAFA] active:cursor-grabbing"
+              title="Drag to reorder section"
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'move'
+                event.dataTransfer.setData('text/scope-section-id', section.id)
+              }}
+            >
+              <GripVertical size={16} />
+            </button>
             <input
               value={section.name}
               onChange={(e) => updateSection(section.id, { name: e.target.value })}
@@ -213,14 +269,36 @@ export default function ScopeBuilder({ sections, onChange }) {
 
           <div className="space-y-2">
             {section.items.filter((item) => !item.hideInPdf).map((item, index) => (
-              <div key={item.id} className={gridClass}>
+              <div
+                key={item.id}
+                className={gridClass}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  reorderItems(section.id, event.dataTransfer.getData('text/scope-item-id'), item.id)
+                }}
+              >
                 <span className="w-9 rounded bg-[#E8E8E8] px-2 py-1 text-center text-xs text-[#1A1A1A]">{index + 1}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="cursor-grab rounded-md border border-[#E8E8E8] p-2 text-[#1A1A1A] hover:bg-[#FAFAFA] active:cursor-grabbing"
+                    title="Drag to reorder item"
+                    draggable
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = 'move'
+                      event.dataTransfer.setData('text/scope-item-id', item.id)
+                    }}
+                  >
+                    <GripVertical size={14} />
+                  </button>
                 <input
                   value={item.text}
                   onChange={(e) => updateItemText(section.id, item.id, e.target.value)}
                   className="flex-1 rounded-lg border border-[#E8E8E8] px-3 py-2 text-sm"
                   placeholder="Item name"
                 />
+                </div>
                 <input
                   value={item.paramLabel}
                   onChange={(e) => updateParameterLabel(section.id, item.id, e.target.value)}
