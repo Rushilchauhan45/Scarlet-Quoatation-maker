@@ -21,11 +21,12 @@ const PAGE_PADDING_TOP = mm(14)
 const PAGE_PADDING_BOTTOM = mm(18)
 const PAGE_NUMBER_SPACE = mm(8)
 const FIRST_PAGE_RESERVED_MIN = mm(122)
-const FIRST_PAGE_RESERVED_MAX = mm(162)
+const FIRST_PAGE_RESERVED_MAX = mm(190)
 const LAST_PAGE_FOOTER_RESERVED = mm(82)
 
 const BLOCK_GAP = mm(3.6)
 const MIN_SPLIT_HEAD_ROWS = {
+  scope: 1,
   material: 4,
   notes: 2,
   payment: 2,
@@ -64,6 +65,15 @@ const formatAmountForPdf = (value) =>
 const estimateLines = (value, charsPerLine) =>
   Math.max(1, Math.ceil(String(value ?? '').trim().length / charsPerLine))
 
+const estimateWrappedLines = (value, charsPerLine) => {
+  const text = String(value ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+  if (!text) return 1
+
+  return text
+    .split('\n')
+    .reduce((sum, line) => sum + Math.max(1, Math.ceil(line.trim().length / charsPerLine)), 0)
+}
+
 const isNoteSectionHeading = (note) => /^\[\d+\]/.test(String(note ?? '').trim())
 const isDesigningQuotation = (quotation = {}) =>
   String(quotation?.quotationType || '').trim() === 'Only Designing (3D Visualization)'
@@ -81,10 +91,14 @@ const estimateFirstPageReserved = (quotation = {}) => {
   const hasGst = Boolean(quotation?.showGstInPdf && String(quotation?.gstNumber || '').trim())
   const hasSquareFeet = Boolean(String(quotation?.totalSquareFeet ?? '').trim())
 
-  const leftMetaRows = 3 + (hasGst ? 1 : 0)
+  const leftMetaRows =
+    estimateWrappedLines(quotation?.clientName, 46) +
+    estimateWrappedLines(quotation?.address, 44) +
+    1 +
+    (hasGst ? 1 : 0)
   const rightMetaRows = 1 + (hasSquareFeet ? 1 : 0)
   const metaRows = Math.max(leftMetaRows, rightMetaRows)
-  const introLines = estimateLines(quotation?.introText, 102)
+  const introLines = estimateWrappedLines(quotation?.introText, 102)
 
   const estimated =
     mm(60) + // header image + its bottom gap
@@ -99,13 +113,14 @@ const estimateFirstPageReserved = (quotation = {}) => {
 
 const estimateScopeBlockHeight = (block) => {
   const base = mm(18.5)
-  const rowsHeight = (block.items || []).reduce((sum, item) => {
-    if (item?.isSubTitle) return sum + mm(9.8)
-    const textLines = estimateLines(item?.text, 88)
-    const rowHeight = Math.max(mm(10.4), textLines * mm(5.4) + mm(3.4))
-    return sum + rowHeight
-  }, 0)
+  const rowsHeight = (block.items || []).reduce((sum, item) => sum + estimateScopeRowHeight(item), 0)
   return base + rowsHeight + BLOCK_GAP
+}
+
+const estimateScopeRowHeight = (item) => {
+  if (item?.isSubTitle) return mm(9.8)
+  const textLines = estimateWrappedLines(item?.text, 88)
+  return Math.max(mm(10.4), textLines * mm(5.4) + mm(3.4))
 }
 
 const estimateMaterialRowHeight = (row) => {
@@ -211,62 +226,31 @@ const buildBlocks = (quotation = {}) => {
   return blocks
 }
 
-const splitScopeBlockByCount = (block, firstCount) => {
-  if (!block || block.type !== 'scope') return { firstBlock: block, secondBlock: null }
-  const items = block.items || []
-  const firstItems = items.slice(0, firstCount)
-  const remainingItems = items.slice(firstCount)
-  const firstBlock = {
-    ...block,
-    key: `${block.key}-part-1`,
-    items: firstItems,
-    serialOffset: 0,
-  }
-  const secondBlock = remainingItems.length
-    ? {
-        ...block,
-        key: `${block.key}-part-2`,
-        items: remainingItems,
-        continued: true,
-        serialOffset: countScopeItems(firstItems),
-      }
-    : null
-
-  return { firstBlock, secondBlock }
-}
-
-const paginateDesigningBlocks = (blocks = []) => {
-  const scopeBlocks = blocks.filter((block) => block.type === 'scope')
-  const notesBlock = blocks.find((block) => block.type === 'notes')
-  const paymentBlock = blocks.find((block) => block.type === 'payment')
-  const totalBlock = blocks.find((block) => block.type === 'total')
-
-  const pages = []
-  const [firstScope, ...restScopes] = scopeBlocks
-
-  if (firstScope) {
-    const { firstBlock, secondBlock } = splitScopeBlockByCount(firstScope, 3)
-    pages.push([firstBlock])
-
-    const pageTwoBlocks = []
-    if (secondBlock) pageTwoBlocks.push(secondBlock)
-    if (restScopes.length) pageTwoBlocks.push(...restScopes)
-    if (notesBlock) pageTwoBlocks.push(notesBlock)
-    pages.push(pageTwoBlocks)
-  } else {
-    pages.push([])
-    pages.push(notesBlock ? [notesBlock] : [])
-  }
-
-  const pageThreeBlocks = []
-  if (paymentBlock) pageThreeBlocks.push(paymentBlock)
-  if (totalBlock) pageThreeBlocks.push(totalBlock)
-  pages.push(pageThreeBlocks)
-
-  return pages
-}
+const paginateDesigningBlocks = (blocks = [], quotation = {}) => paginateBlocks(blocks, quotation)
 
 const createSplitBlocks = (block, fitCount, partTag) => {
+  if (block.type === 'scope') {
+    const fittedItems = block.items.slice(0, fitCount)
+    const remainingItems = block.items.slice(fitCount)
+    const serialOffset = block.serialOffset || 0
+
+    return {
+      fitted: {
+        ...block,
+        key: `${block.key}-part-${partTag}`,
+        items: fittedItems,
+        serialOffset,
+      },
+      remaining: {
+        ...block,
+        key: `${block.key}-part-${partTag + 1}`,
+        items: remainingItems,
+        continued: true,
+        serialOffset: serialOffset + countScopeItems(fittedItems),
+      },
+    }
+  }
+
   if (block.type === 'material') {
     return {
       fitted: {
@@ -327,13 +311,6 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0, options =
   if (firstPageLimit > baseLimit) firstPageLimit = baseLimit
   const regularPageLimit = baseLimit
 
-  const firstBlock = blocks[0]
-  if (firstBlock?.type === 'scope') {
-    const firstBlockHeight = estimateBlockHeight(firstBlock)
-    const minFirstPage = Math.min(baseLimit, firstBlockHeight + mm(6))
-    if (firstPageLimit < minFirstPage) firstPageLimit = minFirstPage
-  }
-
   const pages = []
   let currentPage = []
   let currentHeight = 0
@@ -354,25 +331,34 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0, options =
       continue
     }
 
-    if (pageIndex === 0 && currentPage.length === 0 && block.type === 'scope') {
-      currentPage.push(block)
-      currentHeight += blockHeight
-      continue
-    }
-
-    const isSplitCandidate = block.type === 'material' || block.type === 'notes' || block.type === 'payment'
+    const isSplitCandidate =
+      block.type === 'scope' || block.type === 'material' || block.type === 'notes' || block.type === 'payment'
 
     if (isSplitCandidate && available > mm(14)) {
-      const source = block.type === 'notes' ? block.notes : block.rows
+      const source =
+        block.type === 'scope'
+          ? block.items
+          : block.type === 'notes'
+            ? block.notes
+            : block.rows
       const rowHeightGetter =
-        block.type === 'material'
+        block.type === 'scope'
+          ? estimateScopeRowHeight
+          : block.type === 'material'
           ? estimateMaterialRowHeight
           : block.type === 'payment'
             ? estimatePaymentRowHeight
             : estimateNoteRowHeight
-      const baseHeight = block.type === 'material' ? mm(18.5) : block.type === 'payment' ? mm(16.2) : mm(12)
+      const baseHeight =
+        block.type === 'scope'
+          ? mm(18.5)
+          : block.type === 'material'
+            ? mm(18.5)
+            : block.type === 'payment'
+              ? mm(16.2)
+              : mm(12)
 
-      const splitSafety = block.type === 'material' ? mm(4) : mm(2)
+      const splitSafety = block.type === 'scope' ? mm(20) : block.type === 'material' ? mm(4) : mm(2)
       const effectiveAvailable = Math.max(0, available - splitSafety)
       let used = baseHeight + BLOCK_GAP
       let fitCount = 0
@@ -384,7 +370,7 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0, options =
       }
 
       const totalRows = source.length
-      const minSplitRemainder = block.type === 'material' ? 4 : 2
+      const minSplitRemainder = block.type === 'scope' ? 1 : block.type === 'material' ? 4 : 2
       let splitCount = fitCount
 
       if (fitCount > 0 && fitCount < totalRows) {
@@ -398,6 +384,10 @@ const paginateBlocks = (blocks = [], quotation = {}, pinnedHeight = 0, options =
         // Avoid tiny fragments like "first 2 rows on this page, rest on next page".
         if (currentPage.length > 0 && fitCount < minHeadRows) {
           splitCount = 0
+        }
+
+        if (block.type === 'scope' && source[fitCount - 1]?.isSubTitle) {
+          splitCount -= 1
         }
 
         if (maxSplitRows <= 0) {
@@ -879,7 +869,7 @@ const renderBlock = (block) => {
 export const QuotationPDFDocument = ({ quotation = {}, headerImageBase64 = null, footerImageBase64 = null }) => {
   const blocks = buildBlocks(quotation)
   const pages = isDesigningQuotation(quotation)
-    ? paginateDesigningBlocks(blocks)
+    ? paginateDesigningBlocks(blocks, quotation)
     : isFourBhkTurnkeyQuotation(quotation)
       ? paginateFourBhkTurnkeyBlocks(blocks, quotation)
       : paginateBlocks(blocks, quotation)
