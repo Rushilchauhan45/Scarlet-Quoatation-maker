@@ -96,7 +96,15 @@ function AppShell() {
         </div>
 
         <footer className="border-t border-[#E8E8E8] px-4 py-4 text-center text-sm text-[#1A1A1A]/80 md:px-8">
-          © 2026 Scarlet Interior Design | Made by Rushil Chauhan
+          © 2026 Scarlet Interior Design | Build By{' '}
+          <a
+            href="https://www.pixoragraphic.me"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="font-semibold text-[#C0392B] underline decoration-[#C0392B]/40 underline-offset-2 transition hover:text-[#922B21] hover:decoration-[#922B21]"
+          >
+            PIXORA GRAPHICS
+          </a>
         </footer>
       </main>
 
